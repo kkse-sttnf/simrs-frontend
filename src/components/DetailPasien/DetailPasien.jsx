@@ -94,7 +94,6 @@ const DetailDataPasien = ({ selectedPatient }) => {
         </div>
         {/* Form */}
         <Form className="mt-3">
-          <h5 className="mt-1 text-center">Biodata</h5>
           <Row className="mb-3">
             {/* Nama Lengkap */}
             <Col md={6}>
@@ -261,7 +260,6 @@ const DetailDataPasien = ({ selectedPatient }) => {
           </Row>
 
           {/* Alamat Lengkap */}
-          <h5 className="mt-4 text-center">Alamat</h5>
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
@@ -342,7 +340,7 @@ const DetailDataPasien = ({ selectedPatient }) => {
             </Col>
             {/* Negara */}
             <Col md={6}>
-              <Form.Group>
+              <Form.Group>9927180875545085
                 <Form.Label className="text-primary text-start w-100">
                   Negara
                 </Form.Label>
@@ -352,7 +350,6 @@ const DetailDataPasien = ({ selectedPatient }) => {
           </Row>
 
           {/* Alamat Domisili */}
-          <h5 className="mt-4 text-center">Alamat Domisili</h5>
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
