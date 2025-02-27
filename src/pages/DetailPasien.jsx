@@ -1,20 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 import NavbarComponent from "../components/Navbar/NavbarComponent";
 import FooterComponent from "../components/Footer/FooterComponent";
 import SearchBar from "../components/Searchbar/Searchbar";
-import BreadcrumbStastis from "../components/BreadcumbsStatis/BreadcumbStatis";
 import DetailDataPasien from "../components/DetailPasien/DetailPasien";
+import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
 
 const DetailPasien = () => {
-    return (
-      <div>
-        <NavbarComponent />
-        <BreadcrumbStastis />
-        <SearchBar />
-        <DetailDataPasien />
-        <FooterComponent />
-      </div>
-    );
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+
+  const handleSelectPatient = (patient) => {
+    setSelectedPatient(patient);
   };
-  
-  export default DetailPasien;
+
+  return (
+    <div>
+      <NavbarComponent />
+      <Breadcrumbs />
+      <SearchBar onSelectPatient={handleSelectPatient} />
+      <DetailDataPasien selectedPatient={selectedPatient} />
+      <FooterComponent />
+    </div>
+  );
+};
+
+export default DetailPasien;

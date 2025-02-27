@@ -1,8 +1,87 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Container, Form, Row, Col, Button, Card } from "react-bootstrap";
-import { FaTimes, FaSave } from "react-icons/fa";
+import { FaSave } from "react-icons/fa";
 
-const DetailDataPasien = () => {
+const DetailDataPasien = ({ selectedPatient }) => {
+  const [formData, setFormData] = useState({
+    namaLengkap: "",
+    nomorRekamMedis: "",
+    nik: "",
+    nomorIdentitasLain: "",
+    namaIbuKandung: "",
+    tempatLahir: "",
+    tanggalLahir: "",
+    jenisKelamin: "",
+    agama: "",
+    suku: "",
+    bahasaDikuasai: "",
+    alamatLengkap: "",
+    rt: "",
+    rw: "",
+    kelurahan: "",
+    kecamatan: "",
+    kabupaten: "",
+    kodePos: "",
+    provinsi: "",
+    negara: "",
+    nomorTeleponRumah: "",
+    nomorTeleponSelular: "",
+    pendidikan: "",
+    pekerjaan: "",
+    statusPernikahan: "",
+    alamatDomisili: "",
+    rtDomisili: "",
+    rwDomisili: "",
+    kelurahanDomisili: "",
+    kecamatanDomisili: "",
+    kabupatenDomisili: "",
+    kodePosDomisili: "",
+    provinsiDomisili: "",
+    negaraDomisili: "",
+  });
+
+
+  useEffect(() => {
+    if (selectedPatient) {
+      setFormData({
+        namaLengkap: selectedPatient.NamaLengkap || "",
+        nomorRekamMedis: selectedPatient.NomorRekamMedis || "",
+        nik: selectedPatient.NIK || "",
+        nomorIdentitasLain: selectedPatient.NomorIdentitasLain || "",
+        namaIbuKandung: selectedPatient.NamaIbuKandung || "",
+        tempatLahir: selectedPatient.TempatLahir || "",
+        tanggalLahir: selectedPatient.TanggalLahir || "",
+        jenisKelamin: selectedPatient.JenisKelamin === 1 ? "Laki-laki" : "Perempuan",
+        agama: selectedPatient.Agama || "",
+        suku: selectedPatient.Suku || "",
+        bahasaDikuasai: selectedPatient.BahasaDikuasai || "",
+        alamatLengkap: selectedPatient.AlamatLengkap || "",
+        rt: selectedPatient.RT || "",
+        rw: selectedPatient.RW || "",
+        kelurahan: selectedPatient.Kelurahan || "",
+        kecamatan: selectedPatient.Kecamatan || "",
+        kabupaten: selectedPatient.KotamadyaKabupaten || "",
+        kodePos: selectedPatient.KodePos || "",
+        provinsi: selectedPatient.Provinsi || "",
+        negara: selectedPatient.Negara || "",
+        nomorTeleponRumah: selectedPatient.NomorTeleponRumah || "",
+        nomorTeleponSelular: selectedPatient.NomorTeleponSelular || "",
+        pendidikan: selectedPatient.Pendidikan === 6 ? "S1" : "Lainnya",
+        pekerjaan: selectedPatient.Pekerjaan === 4 ? "Wiraswasta" : "Lainnya",
+        statusPernikahan: selectedPatient.StatusPernikahan === 1 ? "Menikah" : "Lainnya",
+        alamatDomisili: selectedPatient.AlamatLengkapDomisili || "",
+        rtDomisili: selectedPatient.RTDomisili || "",
+        rwDomisili: selectedPatient.RWDomisili || "",
+        kelurahanDomisili: selectedPatient.KelurahanDomisili || "",
+        kecamatanDomisili: selectedPatient.KecamatanDomisili || "",
+        kabupatenDomisili: selectedPatient.KotamadyaKabupatenDomisili || "",
+        kodePosDomisili: selectedPatient.KodeposDomisili || "",
+        provinsiDomisili: selectedPatient.ProvinsiDomisili || "",
+        negaraDomisili: selectedPatient.NegaraDomisili || "",
+      });
+    }
+  }, [selectedPatient]);
+
   return (
     <Container className="mt-4 my-4">
       <Card className="shadow p-3">
@@ -15,7 +94,7 @@ const DetailDataPasien = () => {
         </div>
         {/* Form */}
         <Form className="mt-3">
-          <h5 className="mt-1">Biodata</h5>
+          <h5 className="mt-1 text-center">Biodata</h5>
           <Row className="mb-3">
             {/* Nama Lengkap */}
             <Col md={6}>
@@ -23,7 +102,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Nama Lengkap
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.namaLengkap} readOnly />
               </Form.Group>
             </Col>
             {/* No Telepon Rumah */}
@@ -32,7 +111,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   No Telp Rumah
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.nomorTeleponRumah} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -44,7 +123,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Nomor Rekam Medis
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.nomorRekamMedis} readOnly />
               </Form.Group>
             </Col>
             {/* No Telepon Pasien */}
@@ -53,7 +132,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   No Telp Pasien
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.nomorTeleponSelular} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -65,7 +144,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   NIK
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.nik} readOnly />
               </Form.Group>
             </Col>
             {/* Pendidikan */}
@@ -74,15 +153,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Pendidikan
                 </Form.Label>
-                <Form.Select>
-                  <option>Pilih Pendidikan</option>
-                  <option>SD</option>
-                  <option>SMP</option>
-                  <option>SMA</option>
-                  <option>D3</option>
-                  <option>S1</option>
-                  <option>S2</option>
-                </Form.Select>
+                <Form.Control type="text" value={formData.pendidikan} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -94,7 +165,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Nomor Identitas Lain (WNA)
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.nomorIdentitasLain} readOnly />
               </Form.Group>
             </Col>
             {/* Pekerjaan */}
@@ -103,12 +174,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Pekerjaan
                 </Form.Label>
-                <Form.Select>
-                  <option>Pilih Pekerjaan</option>
-                  <option>Pegawai</option>
-                  <option>Wiraswasta</option>
-                  <option>Pelajar</option>
-                </Form.Select>
+                <Form.Control type="text" value={formData.pekerjaan} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -120,7 +186,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Nama Ibu Kandung
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.namaIbuKandung} readOnly />
               </Form.Group>
             </Col>
             {/* Status Pernikahan */}
@@ -129,13 +195,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Status Pernikahan
                 </Form.Label>
-                <Form.Select>
-                  <option>Pilih Status Pernikahan</option>
-                  <option>Belum Menikah</option>
-                  <option>Menikah</option>
-                  <option>Cerai Mati</option>
-                  <option>Cerai Hidup</option>
-                </Form.Select>
+                <Form.Control type="text" value={formData.statusPernikahan} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -147,40 +207,34 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Tempat Lahir
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.tempatLahir} readOnly />
               </Form.Group>
             </Col>
-            {/* Tanggal, Bulan, Tahun Lahir */}
-            <Col md={1}>
+            {/* Tanggal Lahir */}
+            <Col md={3}>
               <Form.Group>
                 <Form.Label className="text-primary text-start w-100">
-                  Tanggal
+                  Tanggal Lahir
                 </Form.Label>
-                <Form.Control type="number" />
+                <Form.Control type="text" value={formData.tanggalLahir} readOnly />
               </Form.Group>
             </Col>
-            <Col md={1}>
+            {/* Suku */}
+            <Col md={3}>
               <Form.Group>
                 <Form.Label className="text-primary text-start w-100">
-                  Bulan
+                  Suku
                 </Form.Label>
-                <Form.Control type="number" />
+                <Form.Control type="text" value={formData.suku} readOnly />
               </Form.Group>
             </Col>
-            <Col md={1}>
-              <Form.Group>
-                <Form.Label className="text-primary text-start w-100">
-                  Tahun
-                </Form.Label>
-                <Form.Control type="number" />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
+            {/* Bahasa Dikuasai */}
+            <Col md={3}>
               <Form.Group>
                 <Form.Label className="text-primary text-start w-100">
                   Bahasa Dikuasai
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.bahasaDikuasai} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -192,11 +246,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Jenis Kelamin
                 </Form.Label>
-                <Form.Select>
-                  <option>Pilih Kelamin</option>
-                  <option>Laki - Laki</option>
-                  <option>Perempuan</option>
-                </Form.Select>
+                <Form.Control type="text" value={formData.jenisKelamin} readOnly />
               </Form.Group>
             </Col>
             {/* Agama */}
@@ -205,27 +255,20 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Agama
                 </Form.Label>
-                <Form.Select>
-                  <option>Pilih Agama</option>
-                  <option>Islam</option>
-                  <option>Kristen</option>
-                  <option>Katholik</option>
-                  <option>Hindu</option>
-                  <option>Buddha</option>
-                </Form.Select>
+                <Form.Control type="text" value={formData.agama} readOnly />
               </Form.Group>
             </Col>
           </Row>
 
+          {/* Alamat Lengkap */}
+          <h5 className="mt-4 text-center">Alamat</h5>
           <Row className="mb-3">
-            {/* Alamat Lengkap */}
-            <h5 className="mt-4">Alamat</h5>
             <Col md={6}>
               <Form.Group>
                 <Form.Label className="text-primary text-start w-100">
                   Alamat Lengkap
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.alamatLengkap} readOnly />
               </Form.Group>
             </Col>
             {/* RT */}
@@ -234,7 +277,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   RT
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.rt} readOnly />
               </Form.Group>
             </Col>
             {/* RW */}
@@ -243,7 +286,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   RW
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.rw} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -255,7 +298,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kelurahan
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kelurahan} readOnly />
               </Form.Group>
             </Col>
             {/* Kecamatan */}
@@ -264,7 +307,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kecamatan
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kecamatan} readOnly />
               </Form.Group>
             </Col>
             {/* Kabupaten */}
@@ -273,7 +316,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kabupaten
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kabupaten} readOnly />
               </Form.Group>
             </Col>
             {/* Kode Pos */}
@@ -282,7 +325,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kode Pos
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kodePos} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -294,7 +337,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Provinsi
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.provinsi} readOnly />
               </Form.Group>
             </Col>
             {/* Negara */}
@@ -303,20 +346,20 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Negara
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.negara} readOnly />
               </Form.Group>
             </Col>
           </Row>
 
-          <h5 className="mt-4">Alamat Domisili</h5>
+          {/* Alamat Domisili */}
+          <h5 className="mt-4 text-center">Alamat Domisili</h5>
           <Row className="mb-3">
-            {/* Alamat Lengkap Domisili */}
             <Col md={6}>
               <Form.Group>
                 <Form.Label className="text-primary text-start w-100">
                   Alamat Lengkap Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.alamatDomisili} readOnly />
               </Form.Group>
             </Col>
             {/* RT Domisili */}
@@ -325,7 +368,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   RT Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.rtDomisili} readOnly />
               </Form.Group>
             </Col>
             {/* RW Domisili */}
@@ -334,7 +377,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   RW Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.rwDomisili} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -346,7 +389,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kelurahan Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kelurahanDomisili} readOnly />
               </Form.Group>
             </Col>
             {/* Kecamatan Domisili */}
@@ -355,7 +398,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kecamatan Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kecamatanDomisili} readOnly />
               </Form.Group>
             </Col>
             {/* Kabupaten Domisili */}
@@ -364,7 +407,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kabupaten Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kabupatenDomisili} readOnly />
               </Form.Group>
             </Col>
             {/* Kode Pos Domisili */}
@@ -373,7 +416,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Kode Pos Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.kodePosDomisili} readOnly />
               </Form.Group>
             </Col>
           </Row>
@@ -385,7 +428,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Provinsi Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.provinsiDomisili} readOnly />
               </Form.Group>
             </Col>
             {/* Negara Domisili */}
@@ -394,7 +437,7 @@ const DetailDataPasien = () => {
                 <Form.Label className="text-primary text-start w-100">
                   Negara Domisili
                 </Form.Label>
-                <Form.Control type="text" />
+                <Form.Control type="text" value={formData.negaraDomisili} readOnly />
               </Form.Group>
             </Col>
           </Row>

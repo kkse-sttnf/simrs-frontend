@@ -3,14 +3,13 @@ import NavbarComponent from "../components/Navbar/NavbarComponent";
 import FooterComponent from "../components/Footer/FooterComponent";
 import FormDataPasien from "../components/FormTambahPasien/FormTambahPasien";
 import SearchBar from "../components/Searchbar/Searchbar";
-import { Breadcrumb } from "react-bootstrap";
-import BreadcrumbStastis from "../components/BreadcumbsStatis/BreadcumbStatis";
+import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
 
 const TambahPasien = () => {
     return (
       <div>
         <NavbarComponent />
-        <BreadcrumbStastis />
+        <Breadcrumbs />
         <SearchBar />
         <FormDataPasien />
         <FooterComponent />
