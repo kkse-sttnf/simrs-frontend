@@ -4,7 +4,7 @@ import { Container } from "react-bootstrap";
 const FooterComponent = () => {
   return (
     <>
-      <footer className="bg-primary text-white text-center py-3 fixed-bottom shadow-lg">
+      <footer className="bg-primary text-white text-center py-3 fixed-bottom">
         <Container>
           <p className="mb-0">© 2024 SIM RS - Sistem Informasi Manajemen Rumah Sakit</p>
         </Container>

@@ -17,7 +17,7 @@ const NavbarComponent = () => {
   return (
     <>
       {/* Navbar Fixed */}
-      <Navbar expand="lg" fixed="top" className="bg-primary shadow-lg px-3 py-2" variant="dark">
+      <Navbar expand="lg" fixed="top" className="bg-primary px-3 py-2" variant="dark">
         <Container>
           {/* Logo Kiri */}
           <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
