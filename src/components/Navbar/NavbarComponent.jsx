@@ -5,12 +5,13 @@ import { BsHospital } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 
 const NavbarComponent = () => {
-  const navigate = useNavigate(); // Untuk navigasi setelah logout
+  const navigate = useNavigate();
+  const username = sessionStorage.getItem("username"); 
 
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("username");
-    window.location.href = "/login"; // Redirect ke login setelah logout
+    sessionStorage.removeItem("isLoggedIn");
+    sessionStorage.removeItem("username");
+    navigate("/login");
   };
 
   return (
@@ -44,7 +45,11 @@ const NavbarComponent = () => {
           <Nav className="d-flex align-items-center text-center">
             <span className="d-flex align-items-center text-white mx-2">
               <FaUserCircle size={28} className="me-2" />
-              <span>{localStorage.getItem("username") || "User"}</span>
+              {username && ( // Tampilkan username jika ada
+              <Nav.Item className="text-white me-3 d-flex align-items-center">
+                <span>{username}</span>
+              </Nav.Item>
+            )}
             </span>
 
             {/* Tombol Logout */}

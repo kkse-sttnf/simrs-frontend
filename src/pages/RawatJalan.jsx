@@ -2,7 +2,6 @@ import React from "react";
 import NavbarComponent from "../components/Navbar/NavbarComponent";
 import FooterComponent from "../components/Footer/FooterComponent";
 import SearchBar from "../components/Searchbar/Searchbar";
-import DetailDataPasien from "../components/DetailPasien/DetailPasienForm";
 import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
 
 const RawatJalan = () => {

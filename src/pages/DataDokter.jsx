@@ -9,8 +9,8 @@ const DataDokter = () => {
     return (
       <div>
         <NavbarComponent />
-        <SearchBar />
         <Breadcrumbs />
+        <SearchBar />
         <FooterComponent />
       </div>
     );

@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaUser, FaLock } from "react-icons/fa";
@@ -7,25 +7,25 @@ import SecureImage from "../../assets/images/Secure-login.png";
 const LoginForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate(); // Gunakan useNavigate untuk pindah halaman
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-  
+
     try {
       const response = await fetch("/users.json");
-      
+
       if (!response.ok) throw new Error("Gagal mengambil data pengguna!");
-  
+
       const users = await response.json();
-  
+
       const user = users.find(
         (u) => u.username === username && u.password === password
       );
-  
+
       if (user) {
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("username", user.username);
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("username", user.username); // Simpan username
         alert("Login Berhasil!");
         navigate("/DetailPasien");
       } else {
@@ -38,10 +38,11 @@ const LoginForm = () => {
   };
 
   useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") === "true") {
-      navigate("/DetailPasien"); // Redirect ke halaman utama jika sudah login
+    const isLoggedIn = sessionStorage.getItem("isLoggedIn");
+    if (isLoggedIn === "true") {
+      navigate("/DetailPasien");
     }
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="container-fluid vh-100 vw-100 d-flex p-0">
