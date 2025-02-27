@@ -32,13 +32,13 @@ const NavbarComponent = () => {
           <Navbar.Collapse id="navbar-content">
             {/* Menu Tengah */}
             <Nav className="mx-auto text-center">
-              <Nav.Link as={Link} to="/DataPasien" className="mx-3 text-white fw-semibold">
+              <Nav.Link as={Link} to="/DataPasien" className="mx-3 text-white">
                 Data Pasien
               </Nav.Link>
-              <Nav.Link as={Link} to="/DataDokter" className="mx-3 text-white fw-semibold">
+              <Nav.Link as={Link} to="/DataDokter" className="mx-3 text-white ">
                 Data Dokter
               </Nav.Link>
-              <Nav.Link as={Link} to="/RawatJalan" className="mx-3 text-white fw-semibold">
+              <Nav.Link as={Link} to="/RawatJalan" className="mx-3 text-white ">
                 Rawat Jalan
               </Nav.Link>
             </Nav>
@@ -48,7 +48,7 @@ const NavbarComponent = () => {
               {username && (
                 <Nav.Item className="text-white me-3 d-flex align-items-center">
                   <FaUserCircle size={28} className="me-2" />
-                  <span className="fw-semibold">{username}</span>
+                  <span>{username}</span>
                 </Nav.Item>
               )}
 

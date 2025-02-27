@@ -25,7 +25,7 @@ const LoginForm = () => {
 
       if (user) {
         sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("username", user.username); // Simpan username
+        sessionStorage.setItem("username", user.username); 
         alert("Login Berhasil!");
         navigate("/DetailPasien");
       } else {
