@@ -340,7 +340,7 @@ const DetailDataPasien = ({ selectedPatient }) => {
             </Col>
             {/* Negara */}
             <Col md={6}>
-              <Form.Group>9927180875545085
+              <Form.Group>
                 <Form.Label className="text-primary text-start w-100">
                   Negara
                 </Form.Label>
