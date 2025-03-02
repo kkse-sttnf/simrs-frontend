@@ -1,25 +1,27 @@
 import React, { useState } from "react";
 import { Container, Card, Form, Row, Col, Button } from "react-bootstrap";
-import { FaSave } from "react-icons/fa";
-import Swal from "sweetalert2"; // Import SweetAlert2
-import { useNavigate } from "react-router-dom"; // Import useNavigate untuk navigasi
+import { FaSave, FaPlus, FaTimes } from "react-icons/fa"; // Tambahkan FaTimes
+import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
 
 const FormTambahDokter = () => {
-  const navigate = useNavigate(); // Hook untuk navigasi
+  const navigate = useNavigate();
 
-  // State untuk menyimpan data dokter yang akan ditambahkan
   const [dokter, setDokter] = useState({
     namaDokter: "",
     noPegawai: "",
     spesialis: "",
     nomorPraktek: "",
     ruangPraktek: "",
-    hariPraktek: "",
-    waktuMulai: "",
-    waktuSelesai: "",
+    jadwalPraktek: [
+      {
+        hariPraktek: "",
+        waktuMulai: "",
+        waktuSelesai: "",
+      },
+    ],
   });
 
-  // Fungsi untuk menangani perubahan input
   const handleChange = (e) => {
     const { name, value } = e.target;
     setDokter({
@@ -28,11 +30,44 @@ const FormTambahDokter = () => {
     });
   };
 
-  // Fungsi untuk menangani submit form
+  const handleChangeJadwal = (index, e) => {
+    const { name, value } = e.target;
+    const updatedJadwalPraktek = [...dokter.jadwalPraktek];
+    updatedJadwalPraktek[index][name] = value;
+
+    setDokter((prevDokter) => ({
+      ...prevDokter,
+      jadwalPraktek: updatedJadwalPraktek,
+    }));
+  };
+
+  const handleTambahJadwal = () => {
+    setDokter((prevDokter) => ({
+      ...prevDokter,
+      jadwalPraktek: [
+        ...prevDokter.jadwalPraktek,
+        {
+          hariPraktek: "",
+          waktuMulai: "",
+          waktuSelesai: "",
+        },
+      ],
+    }));
+  };
+
+  const handleHapusJadwal = (index) => {
+    if (dokter.jadwalPraktek.length > 1) { // Hanya hapus jika ada lebih dari satu jadwal
+      const updatedJadwalPraktek = dokter.jadwalPraktek.filter((_, i) => i !== index);
+      setDokter((prevDokter) => ({
+        ...prevDokter,
+        jadwalPraktek: updatedJadwalPraktek,
+      }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Konfirmasi dengan SweetAlert2
     const confirmResult = await Swal.fire({
       title: "Apakah Anda yakin?",
       text: "Pastikan data yang Anda masukkan sudah benar.",
@@ -42,10 +77,8 @@ const FormTambahDokter = () => {
       cancelButtonText: "Batal",
     });
 
-    // Jika pengguna menekan "Ya, Simpan"
     if (confirmResult.isConfirmed) {
       try {
-        // Kirim data ke json-server
         const response = await fetch("http://localhost:3001/dokter", {
           method: "POST",
           headers: {
@@ -58,7 +91,6 @@ const FormTambahDokter = () => {
           throw new Error("Gagal menyimpan data dokter.");
         }
 
-        // Tampilkan pesan sukses
         await Swal.fire({
           title: "Sukses!",
           text: "Data dokter berhasil ditambahkan.",
@@ -66,11 +98,9 @@ const FormTambahDokter = () => {
           confirmButtonText: "OK",
         });
 
-        // Beralih ke halaman Data Dokter
-        navigate("/DataDokter");
+        navigate("/data-dokter");
       } catch (error) {
         console.error("Error:", error);
-        // Tampilkan pesan error
         Swal.fire({
           title: "Error!",
           text: "Terjadi kesalahan saat menyimpan data dokter.",
@@ -167,54 +197,77 @@ const FormTambahDokter = () => {
             </Row>
 
             {/* Bagian Jadwal Praktek */}
-            <Row className="mb-3">
-              <Col md={2}>
-                <Form.Group>
-                  <Form.Label className="text-primary">Hari Praktek</Form.Label>
-                  <Form.Select
-                    name="hariPraktek"
-                    value={dokter.hariPraktek}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Pilih Hari</option>
-                    <option value="Senin">Senin</option>
-                    <option value="Selasa">Selasa</option>
-                    <option value="Rabu">Rabu</option>
-                    <option value="Kamis">Kamis</option>
-                    <option value="Jumat">Jumat</option>
-                    <option value="Sabtu">Sabtu</option>
-                    <option value="Minggu">Minggu</option>
-                  </Form.Select>
-                </Form.Group>
+            {dokter.jadwalPraktek.map((jadwal, index) => (
+              <Row className="mb-3" key={index}>
+                <Col md={2}>
+                  <Form.Group>
+                    <Form.Label className="text-primary">Hari Praktek</Form.Label>
+                    <Form.Select
+                      name="hariPraktek"
+                      value={jadwal.hariPraktek}
+                      onChange={(e) => handleChangeJadwal(index, e)}
+                      required
+                    >
+                      <option value="">Pilih Hari</option>
+                      <option value="Senin">Senin</option>
+                      <option value="Selasa">Selasa</option>
+                      <option value="Rabu">Rabu</option>
+                      <option value="Kamis">Kamis</option>
+                      <option value="Jumat">Jumat</option>
+                      <option value="Sabtu">Sabtu</option>
+                      <option value="Minggu">Minggu</option>
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col md={2}>
+                  <Form.Group>
+                    <Form.Label className="text-primary">Waktu Mulai</Form.Label>
+                    <Form.Control
+                      type="time"
+                      name="waktuMulai"
+                      value={jadwal.waktuMulai}
+                      onChange={(e) => handleChangeJadwal(index, e)}
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={2}>
+                  <Form.Group>
+                    <Form.Label className="text-primary">Waktu Selesai</Form.Label>
+                    <Form.Control
+                      type="time"
+                      name="waktuSelesai"
+                      value={jadwal.waktuSelesai}
+                      onChange={(e) => handleChangeJadwal(index, e)}
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+                {/* Tombol Silang Merah untuk Menghapus Jadwal */}
+                {dokter.jadwalPraktek.length > 1 && ( // Hanya tampilkan tombol hapus jika ada lebih dari satu jadwal
+                  <Col md={1} className="d-flex align-items-end">
+                    <Button
+                      variant="danger"
+                      className="rounded-circle"
+                      onClick={() => handleHapusJadwal(index)}
+                    >
+                      <FaTimes />
+                    </Button>
+                  </Col>
+                )}
+                <Col md={1} className="d-flex align-items-end">
+                <Button
+                  variant="success"
+                  className="rounded-circle"
+                  onClick={handleTambahJadwal}
+                >
+                  <FaPlus />
+                </Button>
               </Col>
-              <Col md={2}>
-                <Form.Group>
-                  <Form.Label className="text-primary">Waktu Mulai</Form.Label>
-                  <Form.Control
-                    type="time"
-                    name="waktuMulai"
-                    value={dokter.waktuMulai}
-                    onChange={handleChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={2}>
-                <Form.Group>
-                  <Form.Label className="text-primary">
-                    Waktu Selesai
-                  </Form.Label>
-                  <Form.Control
-                    type="time"
-                    name="waktuSelesai"
-                    value={dokter.waktuSelesai}
-                    onChange={handleChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+              </Row>
+            ))}
+
+
 
             {/* Tombol Simpan */}
             <div className="d-flex justify-content-end gap-2 mt-3">
