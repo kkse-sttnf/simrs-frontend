@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Container, Form, Row, Col, Button, Card } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
+import { useNavigate } from "react-router-dom"; 
 
 const DetailDataPasien = ({ selectedPatient }) => {
+  const navigate = useNavigate(); // Inisialisasi useNavigate
+
   const [formData, setFormData] = useState({
     namaLengkap: "",
     nomorRekamMedis: "",
@@ -40,101 +43,101 @@ const DetailDataPasien = ({ selectedPatient }) => {
     negaraDomisili: "",
   });
 
- // Fungsi untuk mengonversi angka jenis kelamin ke teks
- const getJenisKelaminText = (value) => {
-  switch (value) {
-    case 0:
-      return "Tidak diketahui";
-    case 1:
-      return "Laki-laki";
-    case 2:
-      return "Perempuan";
-    case 3:
-      return "Tidak dapat ditentukan";
-    default:
-      return "Tidak valid";
-  }
-};
+  // Fungsi untuk mengonversi angka jenis kelamin ke teks
+  const getJenisKelaminText = (value) => {
+    switch (value) {
+      case 0:
+        return "Tidak diketahui";
+      case 1:
+        return "Laki-laki";
+      case 2:
+        return "Perempuan";
+      case 3:
+        return "Tidak dapat ditentukan";
+      default:
+        return "Tidak valid";
+    }
+  };
 
-const getAgama = (value) => {
-  switch (value) {
-    case 0:
-      return "Tidak diketahui";
-    case 1:
-      return "Islam";
-    case 2:
-      return "Kristen (Protestan)";
-    case 3:
-      return "Katolik";
-    case 4:
-      return "Hindu";
-    case 5:
-      return "Budha";
-    case 6:
-      return "Konghucu";
-    case 7:
-      return "Penghayat";
-    default:
-      return "Tidak valid";
-  }
-};
+  const getAgama = (value) => {
+    switch (value) {
+      case 0:
+        return "Tidak diketahui";
+      case 1:
+        return "Islam";
+      case 2:
+        return "Kristen (Protestan)";
+      case 3:
+        return "Katolik";
+      case 4:
+        return "Hindu";
+      case 5:
+        return "Budha";
+      case 6:
+        return "Konghucu";
+      case 7:
+        return "Penghayat";
+      default:
+        return "Tidak valid";
+    }
+  };
 
-const getPendidikan = (value) => {
-  switch (value) {
-    case 0:
-      return "Tidak sekolah;";
-    case 1:
-      return "SD";
-    case 2:
-      return "SLTP sederajat;";
-    case 3:
-      return "SLTA sederajat";
-    case 4:
-      return "D1-D3 sederajat";
-    case 5:
-      return "D4";
-    case 6:
-      return "S1";
-    case 7:
-      return "S2";
-    case 8:
-      return "S3";
-    default:
-      return "Tidak valid";
-  }
-};
+  const getPendidikan = (value) => {
+    switch (value) {
+      case 0:
+        return "Tidak sekolah";
+      case 1:
+        return "SD";
+      case 2:
+        return "SLTP sederajat";
+      case 3:
+        return "SLTA sederajat";
+      case 4:
+        return "D1-D3 sederajat";
+      case 5:
+        return "D4";
+      case 6:
+        return "S1";
+      case 7:
+        return "S2";
+      case 8:
+        return "S3";
+      default:
+        return "Tidak valid";
+    }
+  };
 
-const getPerkerjaan = (value) => {
-  switch (value) {
-    case 0:
-      return "Tidak bekerja";
-    case 1:
-      return "PNS";
-    case 2:
-      return "TNI/POLRI";
-    case 3:
-      return "BUMN";
-    case 4:
-      return "Pegawai/Wirausaha";
-    default:
-      return "Tidak valid";
-  }
-};
+  const getPerkerjaan = (value) => {
+    switch (value) {
+      case 0:
+        return "Tidak bekerja";
+      case 1:
+        return "PNS";
+      case 2:
+        return "TNI/POLRI";
+      case 3:
+        return "BUMN";
+      case 4:
+        return "Pegawai/Wirausaha";
+      default:
+        return "Tidak valid";
+    }
+  };
 
-const getPernikahan = (value) => {
-  switch (value) {
-    case 1:
-      return "Belum Kawin";
-    case 2:
-      return "Kawin";
-    case 3:
-      return "Cerai Hidup";
-    case 4:
-      return "Cerai Hidup";
-    default:
-      return "Tidak valid";
-  }
-};
+  const getPernikahan = (value) => {
+    switch (value) {
+      case 1:
+        return "Belum Kawin";
+      case 2:
+        return "Kawin";
+      case 3:
+        return "Cerai Hidup";
+      case 4:
+        return "Cerai Mati";
+      default:
+        return "Tidak valid";
+    }
+  };
 
   useEffect(() => {
     if (selectedPatient) {
@@ -177,13 +180,22 @@ const getPernikahan = (value) => {
     }
   }, [selectedPatient]);
 
+  const handleTambahPasien = () => {
+    navigate("/DetailPasien/TambahPasien"); // Navigasi ke halaman TambahPasien
+  };
+
+
   return (
     <Container className="mt-4 my-4">
       <Card className="shadow p-3">
         {/* Header */}
         <div className="bg-primary text-white p-3 rounded d-flex justify-content-between align-items-center">
           <h4 className="mb-0 text-start">Detail Pasien</h4>
-          <Button variant="light" className="text-primary fw-bold">
+          <Button
+            variant="light"
+            className="text-primary fw-bold"
+            onClick={handleTambahPasien} // Tambahkan onClick handler
+          >
             +
           </Button>
         </div>

@@ -1,12 +1,11 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import Login from "./pages/LoginForm/LoginForm";  
-import DataDokter from "./pages/DataDokter"; 
-import DetailPasien from "./pages/DetailPasien"; 
-import TambahPasien from "./pages/TambahPasien"; 
+import Login from "./pages/LoginForm/LoginForm";
+import DataDokter from "./pages/DataDokter";
+import DetailPasien from "./pages/DetailPasien";
+import TambahPasien from "./pages/TambahPasien";
 import RawatJalan from "./pages/RawatJalan";
 import ProtectedRoute from "./components/ProtectJS/ProtectJs";
-
 
 const PageTitleUpdater = () => {
   const location = useLocation();
@@ -20,24 +19,22 @@ const PageTitleUpdater = () => {
       "/RawatJalan": "Rawat Jalan - SIM RS",
     };
 
-    document.title = titles[location.pathname] || "SIM RS"; 
+    document.title = titles[location.pathname] || "SIM RS";
   }, [location]);
 
-  return null; 
+  return null;
 };
-
-
 
 function App() {
   return (
     <Router>
-      <PageTitleUpdater /> 
+      <PageTitleUpdater />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/DataDokter" element={<DataDokter />} />
           <Route path="/DetailPasien" element={<DetailPasien />} />
-          <Route path="/TambahPasien" element={<TambahPasien />} />
+          <Route path="/DetailPasien/TambahPasien" element={<TambahPasien />} />
           <Route path="/RawatJalan" element={<RawatJalan />} />
         </Route>
         <Route path="*" element={<Login />} />
