@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Container, Card, Form, Row, Col, Button } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 
 const DetailDokter = ({ selectedDokter }) => {
   const [dokter, setDokter] = useState(selectedDokter || {});
-  const navigate = useNavigate(); // Hook untuk navigasi
+  const navigate = useNavigate();
 
   // Update state ketika selectedDokter berubah
   React.useEffect(() => {
@@ -14,7 +14,7 @@ const DetailDokter = ({ selectedDokter }) => {
 
   // Fungsi untuk navigasi ke halaman TambahDokter
   const handleTambahDokter = () => {
-    navigate("/DataDokter/TambahDokter"); // Navigasi ke route /tambah-dokter
+    navigate("/DataDokter/TambahDokter");
   };
 
   return (
@@ -26,7 +26,7 @@ const DetailDokter = ({ selectedDokter }) => {
           <Button
             variant="light"
             className="text-primary fw-bold"
-            onClick={handleTambahDokter} // Panggil fungsi handleTambahDokter
+            onClick={handleTambahDokter}
           >
             <FaPlus />
           </Button>
@@ -96,40 +96,40 @@ const DetailDokter = ({ selectedDokter }) => {
             </Row>
 
             {/* Bagian Jadwal Praktek */}
-            <Row className="mb-3">
-              <Col md={2}>
-                <Form.Group>
-                  <Form.Label className="text-primary">Hari Praktek</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={dokter.hariPraktek || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={2}>
-                <Form.Group>
-                  <Form.Label className="text-primary">Waktu Mulai</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={dokter.waktuMulai || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={2}>
-                <Form.Group>
-                  <Form.Label className="text-primary">
-                    Waktu Selesai
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={dokter.waktuSelesai || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+            {dokter.jadwalPraktek?.map((jadwal, index) => (
+              <Row className="mb-3" key={index}>
+                <Col md={2}>
+                  <Form.Group>
+                    <Form.Label className="text-primary">Hari Praktek</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={jadwal.hariPraktek || ""}
+                      readOnly
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={2}>
+                  <Form.Group>
+                    <Form.Label className="text-primary">Waktu Mulai</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={jadwal.waktuMulai || ""}
+                      readOnly
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={2}>
+                  <Form.Group>
+                    <Form.Label className="text-primary">Waktu Selesai</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={jadwal.waktuSelesai || ""}
+                      readOnly
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+            ))}
           </Form>
         </Card.Body>
       </Card>
