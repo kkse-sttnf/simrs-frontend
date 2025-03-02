@@ -1,30 +1,57 @@
 import { useState } from "react";
 import { Form, Col, Button, InputGroup, Row, Container } from "react-bootstrap";
 import Swal from "sweetalert2"; // Import SweetAlert2
-import data from "../../datapasien.json";
 
 const SearchBar = ({ onSelectPatient }) => {
   const [nikNrm, setNikNrm] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = () => {
-    const found = data.find(
-      (item) => item.NIK === nikNrm || item.NomorRekamMedis === nikNrm
-    );
+  const handleSearch = async () => {
+    if (!nikNrm.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Input Kosong",
+        text: "Silakan masukkan NIK atau Nomor Rekam Medis.",
+      });
+      return;
+    }
 
-    if (found) {
-      if (onSelectPatient && typeof onSelectPatient === "function") {
-        onSelectPatient(found);
-      } else {
-        console.error("onSelectPatient is not a function");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:3001/pasien");
+      if (!response.ok) {
+        throw new Error("Gagal mengambil data dari server");
       }
-    } else {
-      // Tampilkan alert jika data tidak ditemukan
+
+      const data = await response.json();
+      const found = data.find(
+        (item) => item.NIK === nikNrm || item.NomorRekamMedis === nikNrm
+      );
+
+      if (found) {
+        if (onSelectPatient && typeof onSelectPatient === "function") {
+          onSelectPatient(found);
+        } else {
+          console.error("onSelectPatient is not a function");
+        }
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Data Tidak Ditemukan",
+          text: "Data pasien dengan NIK/Nomor Rekam Medis tersebut tidak ditemukan.",
+          confirmButtonText: "OK",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
       Swal.fire({
         icon: "error",
-        title: "Data Tidak Ditemukan",
-        text: "Data pasien dengan NIK/Nomor Rekam Medis tersebut tidak ditemukan.",
-        confirmButtonText: "OK",
+        title: "Terjadi Kesalahan",
+        text: "Gagal mengambil data dari server.",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,9 +73,10 @@ const SearchBar = ({ onSelectPatient }) => {
                 onChange={(e) => setNikNrm(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Masukkan NIK atau Nomor Rekam Medis"
+                disabled={loading}
               />
-              <Button variant="primary" onClick={handleSearch}>
-                Search
+              <Button variant="primary" onClick={handleSearch} disabled={loading}>
+                {loading ? "Mencari..." : "Search"}
               </Button>
             </InputGroup>
           </Form.Group>

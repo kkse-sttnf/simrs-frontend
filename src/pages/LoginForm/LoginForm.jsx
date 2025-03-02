@@ -13,12 +13,13 @@ const LoginForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch("/users.json");
-
+      // Mengambil data pengguna dari json-server
+      const response = await fetch("http://localhost:3001/users");
       if (!response.ok) throw new Error("Gagal mengambil data pengguna!");
 
       const users = await response.json();
 
+      // Cari pengguna yang sesuai
       const user = users.find(
         (u) => u.username === username && u.password === password
       );
@@ -38,6 +39,7 @@ const LoginForm = () => {
   };
 
   useEffect(() => {
+    // Cek apakah pengguna sudah login
     const isLoggedIn = sessionStorage.getItem("isLoggedIn");
     if (isLoggedIn === "true") {
       navigate("/DetailPasien");
