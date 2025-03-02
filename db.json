@@ -160,5 +160,40 @@
       "username": "user",
       "password": "password"
     }
+  ],
+  "dokter": [
+    {
+      "id": "1",
+      "namaDokter": "Dr. Ahmad Fauzi",
+      "noPegawai": "12345",
+      "spesialis": "Dokter Umum",
+      "nomorPraktek": "P001",
+      "ruangPraktek": "Ruang 101",
+      "hariPraktek": "Senin",
+      "waktuMulai": "08:00",
+      "waktuSelesai": "12:00"
+    },
+    {
+      "id": "2",
+      "namaDokter": "Dr. Siti Rahma",
+      "noPegawai": "67890",
+      "spesialis": "Dokter Anak",
+      "nomorPraktek": "P002",
+      "ruangPraktek": "Ruang 102",
+      "hariPraktek": "Selasa",
+      "waktuMulai": "09:00",
+      "waktuSelesai": "13:00"
+    },
+    {
+      "id": "3",
+      "namaDokter": "Dr. Budi Santoso",
+      "noPegawai": "54321",
+      "spesialis": "Dokter Bedah",
+      "nomorPraktek": "P003",
+      "ruangPraktek": "Ruang 103",
+      "hariPraktek": "Rabu",
+      "waktuMulai": "10:00",
+      "waktuSelesai": "14:00"
+    }
   ]
 }
