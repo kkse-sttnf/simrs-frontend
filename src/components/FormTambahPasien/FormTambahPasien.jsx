@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { Container, Card, Button, Form, Row, Col } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
+import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
 
 const FormTambahPasien = () => {
-  // State untuk menyimpan nilai input
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     namaLengkap: "",
     noTelpRumah: "",
@@ -41,7 +44,6 @@ const FormTambahPasien = () => {
     negaraDomisili: "",
   });
 
-  // Fungsi untuk menangani perubahan input
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -50,11 +52,83 @@ const FormTambahPasien = () => {
     });
   };
 
-  // Fungsi untuk menangani submit form
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Data yang dikirim:", formData); // Output data ke console
-    // Di sini Anda bisa menambahkan logika untuk mengirim data ke backend
+
+    Swal.fire({
+      title: "Konfirmasi",
+      text: "Apakah Anda sudah memasukkan data dengan benar?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, benar!",
+      cancelButtonText: "Cek lagi",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch("http://localhost:3001/pasien", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          });
+
+          if (response.ok) {
+            Swal.fire({
+              title: "Berhasil!",
+              text: "Pasien berhasil ditambahkan.",
+              icon: "success",
+              timer: 1500,
+              showConfirmButton: false,
+            }).then(() => {
+              navigate("/detail-pasien");
+            });
+
+            setFormData({
+              namaLengkap: "",
+              noTelpRumah: "",
+              nomorRekamMedis: "",
+              noTelpPasien: "",
+              nik: "",
+              pendidikan: "",
+              nomorIdentitasLain: "",
+              pekerjaan: "",
+              namaIbuKandung: "",
+              statusPernikahan: "",
+              tempatLahir: "",
+              tanggalLahir: "",
+              suku: "",
+              bahasaDikuasai: "",
+              jenisKelamin: "",
+              agama: "",
+              alamatLengkap: "",
+              rt: "",
+              rw: "",
+              kelurahan: "",
+              kecamatan: "",
+              kabupaten: "",
+              kodePos: "",
+              provinsi: "",
+              negara: "",
+              alamatDomisili: "",
+              rtDomisili: "",
+              rwDomisili: "",
+              kelurahanDomisili: "",
+              kecamatanDomisili: "",
+              kabupatenDomisili: "",
+              kodePosDomisili: "",
+              provinsiDomisili: "",
+              negaraDomisili: "",
+            });
+          } else {
+            Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          Swal.fire("Error", "Terjadi kesalahan saat menyimpan data.", "error");
+        }
+      }
+    });
   };
 
   return (
