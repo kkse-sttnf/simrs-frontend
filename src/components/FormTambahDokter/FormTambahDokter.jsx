@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import { Container, Card, Form, Row, Col, Button } from "react-bootstrap"; // Import Button dari react-bootstrap
+import { Container, Card, Form, Row, Col, Button } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
+import Swal from "sweetalert2"; // Import SweetAlert2
+import { useNavigate } from "react-router-dom"; // Import useNavigate untuk navigasi
 
 const FormTambahDokter = () => {
+  const navigate = useNavigate(); // Hook untuk navigasi
+
   // State untuk menyimpan data dokter yang akan ditambahkan
   const [dokter, setDokter] = useState({
     namaDokter: "",
@@ -25,10 +29,56 @@ const FormTambahDokter = () => {
   };
 
   // Fungsi untuk menangani submit form
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Data Dokter yang Ditambahkan:", dokter);
-    // Di sini Anda bisa menambahkan logika untuk mengirim data ke server atau menyimpannya di state global.
+
+    // Konfirmasi dengan SweetAlert2
+    const confirmResult = await Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Pastikan data yang Anda masukkan sudah benar.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Simpan",
+      cancelButtonText: "Batal",
+    });
+
+    // Jika pengguna menekan "Ya, Simpan"
+    if (confirmResult.isConfirmed) {
+      try {
+        // Kirim data ke json-server
+        const response = await fetch("http://localhost:3001/dokter", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dokter),
+        });
+
+        if (!response.ok) {
+          throw new Error("Gagal menyimpan data dokter.");
+        }
+
+        // Tampilkan pesan sukses
+        await Swal.fire({
+          title: "Sukses!",
+          text: "Data dokter berhasil ditambahkan.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+
+        // Beralih ke halaman Data Dokter
+        navigate("/DataDokter");
+      } catch (error) {
+        console.error("Error:", error);
+        // Tampilkan pesan error
+        Swal.fire({
+          title: "Error!",
+          text: "Terjadi kesalahan saat menyimpan data dokter.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      }
+    }
   };
 
   return (
@@ -166,7 +216,7 @@ const FormTambahDokter = () => {
               </Col>
             </Row>
 
-            {/* Tombol Batal & Simpan */}
+            {/* Tombol Simpan */}
             <div className="d-flex justify-content-end gap-2 mt-3">
               <Button variant="success" type="submit">
                 <FaSave /> Tambah Data

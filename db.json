@@ -194,6 +194,28 @@
       "hariPraktek": "Rabu",
       "waktuMulai": "10:00",
       "waktuSelesai": "14:00"
+    },
+    {
+      "id": "0a72",
+      "namaDokter": "ad",
+      "noPegawai": "as",
+      "spesialis": "asa",
+      "nomorPraktek": "as",
+      "ruangPraktek": "as",
+      "hariPraktek": "Senin",
+      "waktuMulai": "12:00",
+      "waktuSelesai": "14:00"
+    },
+    {
+      "id": "3434",
+      "namaDokter": "q",
+      "noPegawai": "qwe",
+      "spesialis": "q",
+      "nomorPraktek": "wqe",
+      "ruangPraktek": "qwe",
+      "hariPraktek": "Selasa",
+      "waktuMulai": "12:00",
+      "waktuSelesai": "14:00"
     }
   ]
 }
