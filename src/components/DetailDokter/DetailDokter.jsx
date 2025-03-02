@@ -1,21 +1,34 @@
 import React, { useState } from "react";
 import { Container, Card, Form, Row, Col, Button } from "react-bootstrap";
+import { FaPlus } from "react-icons/fa";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const DetailDokter = ({ selectedDokter }) => {
   const [dokter, setDokter] = useState(selectedDokter || {});
+  const navigate = useNavigate(); // Hook untuk navigasi
 
   // Update state ketika selectedDokter berubah
   React.useEffect(() => {
     setDokter(selectedDokter || {});
   }, [selectedDokter]);
 
+  // Fungsi untuk navigasi ke halaman TambahDokter
+  const handleTambahDokter = () => {
+    navigate("/DataDokter/TambahDokter"); // Navigasi ke route /tambah-dokter
+  };
+
   return (
     <Container className="my-4">
       <Card className="shadow">
         <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
           <h4 className="mb-0">Detail Dokter</h4>
-          <Button variant="light" className="text-primary fw-bold">
-            +
+          {/* Tombol + untuk navigasi ke halaman TambahDokter */}
+          <Button
+            variant="light"
+            className="text-primary fw-bold"
+            onClick={handleTambahDokter} // Panggil fungsi handleTambahDokter
+          >
+            <FaPlus />
           </Button>
         </Card.Header>
         <Card.Body>
@@ -27,7 +40,6 @@ const DetailDokter = ({ selectedDokter }) => {
                   <Form.Label className="text-primary">Nama Dokter</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Masukkan Nama Dokter"
                     value={dokter.namaDokter || ""}
                     readOnly
                   />
@@ -38,7 +50,6 @@ const DetailDokter = ({ selectedDokter }) => {
                   <Form.Label className="text-primary">No Pegawai</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Masukkan No Pegawai"
                     value={dokter.noPegawai || ""}
                     readOnly
                   />
@@ -53,7 +64,6 @@ const DetailDokter = ({ selectedDokter }) => {
                   <Form.Label className="text-primary">Spesialis</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Masukkan Spesialis"
                     value={dokter.spesialis || ""}
                     readOnly
                   />
@@ -66,7 +76,6 @@ const DetailDokter = ({ selectedDokter }) => {
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Masukkan Nomor Praktek"
                     value={dokter.nomorPraktek || ""}
                     readOnly
                   />
@@ -79,7 +88,6 @@ const DetailDokter = ({ selectedDokter }) => {
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Masukkan Ruang Praktek"
                     value={dokter.ruangPraktek || ""}
                     readOnly
                   />
