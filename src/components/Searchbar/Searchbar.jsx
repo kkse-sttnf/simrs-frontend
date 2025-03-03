@@ -74,8 +74,14 @@ const SearchBar = ({ onSelectPatient }) => {
                 onKeyPress={handleKeyPress}
                 placeholder="Masukkan NIK atau Nomor Rekam Medis"
                 disabled={loading}
+                className="form-control-lg" 
               />
-              <Button variant="primary" onClick={handleSearch} disabled={loading}>
+              <Button
+                variant="primary" 
+                onClick={handleSearch}
+                disabled={loading}
+                className="btn-lg" 
+              >
                 {loading ? "Mencari..." : "Search"}
               </Button>
             </InputGroup>

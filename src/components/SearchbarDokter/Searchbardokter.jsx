@@ -76,8 +76,9 @@ const SearchbarDokter = ({ onSelectDokter }) => {
                 onKeyPress={handleKeyPress}
                 placeholder="Masukkan Nama Dokter atau No Pegawai"
                 disabled={loading}
+                className="form-control-lg"
               />
-              <Button variant="primary" onClick={handleSearch} disabled={loading}>
+              <Button variant="primary" onClick={handleSearch} disabled={loading} className="btn-lg" >
                 {loading ? "Mencari..." : "Search"}
               </Button>
             </InputGroup>
