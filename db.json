@@ -60,14 +60,6 @@
       ]
     }
   ],
-  "rawatJalan": [
-    {
-      "id": "2125",
-      "patientId": "1",
-      "doctorId": 1,
-      "schedule": "Senin 08:00 - 12:00"
-    }
-  ],
   "users": [
     {
       "id": "1",
@@ -80,26 +72,44 @@
       "password": "password"
     }
   ],
-    "rawatJalan": [
-      {
-        "id": 1,
-        "namaPasien": "John Doe",
-        "nomorIdentitas": "123456",
-        "namaDokter": "Dr. Jane Smith",
-        "spesialis": "Umum",
-        "nomorPraktek": "D001",
-        "jadwalDokter": "Senin, 08:00 - 12:00",
-        "ruangPraktek": "Ruang 101"
-      },
-      {
-        "id": 2,
-        "namaPasien": "Alice Johnson",
-        "nomorIdentitas": "654321",
-        "namaDokter": "Dr. John Doe",
-        "spesialis": "Kardiologi",
-        "nomorPraktek": "D002",
-        "jadwalDokter": "Selasa, 13:00 - 17:00",
-        "ruangPraktek": "Ruang 102"
-      }
-    ]
+  "rawatJalan": [
+    {
+      "id": 1,
+      "namaPasien": "John Doe",
+      "nomorIdentitas": "123456",
+      "namaDokter": "Dr. Jane Smith",
+      "spesialis": "Umum",
+      "nomorPraktek": "D001",
+      "jadwalDokter": "Senin, 08:00 - 12:00",
+      "ruangPraktek": "Ruang 101"
+    },
+    {
+      "id": 2,
+      "namaPasien": "Alice Johnson",
+      "nomorIdentitas": "654321",
+      "namaDokter": "Dr. John Doe",
+      "spesialis": "Kardiologi",
+      "nomorPraktek": "D002",
+      "jadwalDokter": "Selasa, 13:00 - 17:00",
+      "ruangPraktek": "Ruang 102"
+    },
+    {
+      "id": "ce77",
+      "namaPasien": "Aisha Rahman",
+      "namaDokter": "Dr. Ahmad Fauzi",
+      "spesialis": "Dokter Umum",
+      "nomorPraktek": "P001",
+      "jadwalDokter": "Senin 08:00 - 12:00",
+      "ruangPraktek": "Ruang 101"
+    },
+    {
+      "id": "354e",
+      "namaPasien": "Aisha Rahman",
+      "namaDokter": "Dr. Ahmad Fauzi",
+      "spesialis": "Dokter Umum",
+      "nomorPraktek": "P001",
+      "jadwalDokter": "Senin 08:00 - 12:00",
+      "ruangPraktek": "Ruang 101"
+    }
+  ]
 }

@@ -18,24 +18,43 @@ const ModalRawatJalan = ({
     }
   }, [show]);
 
-  console.log("Dokter di Modal:", dokter); // Debugging
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedDoctor || !selectedSchedule) {
       alert("Harap pilih dokter dan jadwal terlebih dahulu.");
       return;
     }
 
     const data = {
-      patientId: selectedPatient.id,
-      doctorId: selectedDoctor.id,
-      schedule: selectedSchedule,
+      namaPasien: selectedPatient.NamaLengkap,
+      nomorIdentitas: selectedPatient.nomorIdentitas,
+      namaDokter: selectedDoctor.namaDokter,
+      spesialis: selectedDoctor.spesialis,
+      nomorPraktek: selectedDoctor.nomorPraktek,
+      jadwalDokter: selectedSchedule,
+      ruangPraktek: selectedDoctor.ruangPraktek,
     };
-    onSave(data);
-    handleClose();
-  };
 
-  console.log("Dokter di Modal:", dokter);
+    try {
+      // Simpan data ke db.json
+      const response = await fetch("http://localhost:3001/rawatJalan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal menyimpan data.");
+      }
+
+      onSave(data); // Kirim data ke komponen induk
+      handleClose(); // Tutup modal
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Terjadi kesalahan saat menyimpan data.");
+    }
+  };
 
   return (
     <Modal show={show} onHide={handleClose} size="lg">
@@ -63,8 +82,7 @@ const ModalRawatJalan = ({
           </Row>
 
           {/* Pilih Dokter */}
-           {/* Pilih Dokter */}
-           <Row className="mb-3">
+          <Row className="mb-3">
             <Col md={12}>
               <Form.Group>
                 <Form.Label>Pilih Dokter</Form.Label>
@@ -73,7 +91,6 @@ const ModalRawatJalan = ({
                   onChange={(e) => {
                     const doctorId = parseInt(e.target.value);
                     const doctor = dokter.find((d) => d.id === doctorId);
-                    console.log("Dokter yang dipilih:", doctor); // Debugging
                     setSelectedDoctor(doctor);
                     setSelectedSchedule("");
                   }}
@@ -143,7 +160,7 @@ const ModalRawatJalan = ({
                 <Form.Select
                   value={selectedSchedule}
                   onChange={(e) => setSelectedSchedule(e.target.value)}
-                  disabled={!selectedDoctor} // Nonaktifkan jika dokter belum dipilih
+                  disabled={!selectedDoctor}
                 >
                   <option value="">Pilih Jadwal</option>
                   {selectedDoctor && selectedDoctor.jadwalPraktek.length > 0 ? (
