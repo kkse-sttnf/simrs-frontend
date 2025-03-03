@@ -8,10 +8,9 @@ const ModalRawatJalan = ({
   dokter = [],
   onSave,
 }) => {
-  const [selectedDoctor, setSelectedDoctor] = useState(null); // State untuk dokter yang dipilih
-  const [selectedSchedule, setSelectedSchedule] = useState(""); // State untuk jadwal yang dipilih
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [selectedSchedule, setSelectedSchedule] = useState("");
 
-  // Reset form ketika modal ditutup
   useEffect(() => {
     if (!show) {
       setSelectedDoctor(null);
@@ -19,7 +18,8 @@ const ModalRawatJalan = ({
     }
   }, [show]);
 
-  // Handle simpan data
+  console.log("Dokter di Modal:", dokter); // Debugging
+
   const handleSave = () => {
     if (!selectedDoctor || !selectedSchedule) {
       alert("Harap pilih dokter dan jadwal terlebih dahulu.");
@@ -27,13 +27,15 @@ const ModalRawatJalan = ({
     }
 
     const data = {
-      patientId: selectedPatient.id, // ID pasien
-      doctorId: selectedDoctor.id, // ID dokter
-      schedule: selectedSchedule, // Jadwal yang dipilih
+      patientId: selectedPatient.id,
+      doctorId: selectedDoctor.id,
+      schedule: selectedSchedule,
     };
-    onSave(data); // Kirim data ke parent component
-    handleClose(); // Tutup modal
+    onSave(data);
+    handleClose();
   };
+
+  console.log("Dokter di Modal:", dokter);
 
   return (
     <Modal show={show} onHide={handleClose} size="lg">
@@ -49,7 +51,11 @@ const ModalRawatJalan = ({
                 <Form.Label>Nama Pasien</Form.Label>
                 <Form.Control
                   type="text"
-                  value={selectedPatient ? selectedPatient.NamaLengkap : "Pasien tidak ditemukan"}
+                  value={
+                    selectedPatient
+                      ? selectedPatient.NamaLengkap
+                      : "Pasien tidak ditemukan"
+                  }
                   readOnly
                 />
               </Form.Group>
@@ -57,7 +63,8 @@ const ModalRawatJalan = ({
           </Row>
 
           {/* Pilih Dokter */}
-          <Row className="mb-3">
+           {/* Pilih Dokter */}
+           <Row className="mb-3">
             <Col md={12}>
               <Form.Group>
                 <Form.Label>Pilih Dokter</Form.Label>
@@ -66,8 +73,9 @@ const ModalRawatJalan = ({
                   onChange={(e) => {
                     const doctorId = parseInt(e.target.value);
                     const doctor = dokter.find((d) => d.id === doctorId);
-                    setSelectedDoctor(doctor); // Set dokter yang dipilih
-                    setSelectedSchedule(""); // Reset jadwal ketika dokter berubah
+                    console.log("Dokter yang dipilih:", doctor); // Debugging
+                    setSelectedDoctor(doctor);
+                    setSelectedSchedule("");
                   }}
                 >
                   <option value="">Pilih Dokter</option>

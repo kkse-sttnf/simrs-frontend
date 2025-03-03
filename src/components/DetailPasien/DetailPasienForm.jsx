@@ -53,14 +53,22 @@ const DetailDataPasien = ({ selectedPatient }) => {
         const response = await fetch("http://localhost:3001/dokter");
         if (!response.ok) throw new Error("Gagal mengambil data dokter.");
         const data = await response.json();
-        setDokter(data.dokter); // Simpan data dokter ke state
+        console.log("Data Dokter dari API:", data.dokter || data); // Debugging
+        if (data.dokter) {
+          setDokter(data.dokter); // Simpan data dokter ke state
+        } else if (Array.isArray(data)) {
+          setDokter(data); // Jika respons langsung berupa array
+        } else {
+          console.error("Data dokter tidak valid:", data);
+        }
       } catch (error) {
         console.error("Error:", error);
       }
     };
-
+  
     fetchDokter();
   }, []);
+  
 
   // Fungsi untuk menyimpan data pendaftaran rawat jalan
   const handleSaveRegistration = async (data) => {
@@ -220,6 +228,8 @@ const DetailDataPasien = ({ selectedPatient }) => {
   const handleTambahPasien = () => {
     navigate("/DetailPasien/TambahPasien");
   };
+
+  
 
   return (
     <Container className="mt-4 my-4">

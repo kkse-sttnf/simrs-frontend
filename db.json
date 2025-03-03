@@ -61,7 +61,12 @@
     }
   ],
   "rawatJalan": [
-    
+    {
+      "id": "2125",
+      "patientId": "1",
+      "doctorId": 1,
+      "schedule": "Senin 08:00 - 12:00"
+    }
   ],
   "users": [
     {
