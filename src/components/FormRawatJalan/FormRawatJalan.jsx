@@ -3,7 +3,7 @@ import { Container, Row, Col, Card, Form } from "react-bootstrap";
 
 const FormRawatJalan = ({ selectedPasien }) => {
   return (
-    <Container className="mt-4">
+    <Container className="mt-4 mb-5">
       <Card className="shadow">
         <Card.Header className="bg-primary text-white">
           <h4 className="mb-0">Form Rawat Jalan</h4>
@@ -12,12 +12,22 @@ const FormRawatJalan = ({ selectedPasien }) => {
           <Form>
             {/* Bagian Nama Pasien */}
             <Row className="mb-3">
-              <Col md={12}>
+              <Col md={6}>
                 <Form.Group>
                   <Form.Label>Nama Pasien</Form.Label>
                   <Form.Control
                     type="text"
                     value={selectedPasien?.namaPasien || ""}
+                    readOnly
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>NIK</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedPasien?.NIK || ""}
                     readOnly
                   />
                 </Form.Group>

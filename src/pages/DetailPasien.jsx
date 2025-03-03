@@ -5,7 +5,7 @@ import SearchBar from "../components/Searchbar/Searchbar";
 import DetailDataPasien from "../components/DetailPasien/DetailPasienForm";
 import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
 import ModalRawatJalan from "../components/ModalRawatJalan/ModalRawatJalan";
-import { Button } from "react-bootstrap";
+
 
 const DetailPasien = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -44,9 +44,6 @@ const DetailPasien = () => {
       <Breadcrumbs />
       <SearchBar onSelectPatient={handleSelectPatient} />
       <DetailDataPasien selectedPatient={selectedPatient} />
-      <Button variant="primary" onClick={() => setShowModal(true)}>
-        Daftar Rawat Jalan
-      </Button>
       <ModalRawatJalan
         show={showModal}
         handleClose={() => setShowModal(false)}

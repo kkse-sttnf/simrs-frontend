@@ -11,7 +11,7 @@ const SearchRawatJalan = ({ onSelectPasien }) => {
       Swal.fire({
         icon: "warning",
         title: "Input Kosong",
-        text: "Silakan masukkan Nama Pasien atau Nomor Identitas.",
+        text: "Silakan masukkan NIK Pasien.",
       });
       return;
     }
@@ -26,11 +26,7 @@ const SearchRawatJalan = ({ onSelectPasien }) => {
       }
 
       const data = await response.json();
-      const found = data.find(
-        (item) =>
-          item.namaPasien.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.nomorIdentitas === searchQuery
-      );
+      const found = data.find((item) => item.NIK === searchQuery);
 
       if (found) {
         if (onSelectPasien && typeof onSelectPasien === "function") {
@@ -42,7 +38,7 @@ const SearchRawatJalan = ({ onSelectPasien }) => {
         Swal.fire({
           icon: "error",
           title: "Data Tidak Ditemukan",
-          text: "Data pasien dengan Nama/Nomor Identitas tersebut tidak ditemukan.",
+          text: "Data pasien dengan NIK tersebut tidak ditemukan.",
           confirmButtonText: "OK",
         });
       }
@@ -75,7 +71,7 @@ const SearchRawatJalan = ({ onSelectPasien }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Masukkan Nama Pasien atau Nomor Identitas"
+                placeholder="Masukkan NIK Pasien"
                 disabled={loading}
               />
               <Button variant="primary" onClick={handleSearch} disabled={loading}>
