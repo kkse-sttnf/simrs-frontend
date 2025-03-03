@@ -79,5 +79,27 @@
       "username": "user",
       "password": "password"
     }
-  ]
+  ],
+    "rawatJalan": [
+      {
+        "id": 1,
+        "namaPasien": "John Doe",
+        "nomorIdentitas": "123456",
+        "namaDokter": "Dr. Jane Smith",
+        "spesialis": "Umum",
+        "nomorPraktek": "D001",
+        "jadwalDokter": "Senin, 08:00 - 12:00",
+        "ruangPraktek": "Ruang 101"
+      },
+      {
+        "id": 2,
+        "namaPasien": "Alice Johnson",
+        "nomorIdentitas": "654321",
+        "namaDokter": "Dr. John Doe",
+        "spesialis": "Kardiologi",
+        "nomorPraktek": "D002",
+        "jadwalDokter": "Selasa, 13:00 - 17:00",
+        "ruangPraktek": "Ruang 102"
+      }
+    ]
 }
