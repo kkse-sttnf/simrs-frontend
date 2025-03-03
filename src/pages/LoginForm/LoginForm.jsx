@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaUser, FaLock } from "react-icons/fa";
+import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa"; // Tambahkan FaEye dan FaEyeSlash
 import SecureImage from "../../assets/images/Secure-login.png";
 
 const LoginForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State untuk toggle visibility
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -96,7 +97,7 @@ const LoginForm = () => {
             </label>
             <div className="input-group">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"} // Toggle tipe input
                 id="Password"
                 className="form-control rounded-pill"
                 placeholder="Masukan Password"
@@ -104,9 +105,14 @@ const LoginForm = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <span className="input-group-text bg-transparent border-0 position-absolute end-0 me-3 d-flex align-items-center top-50 translate-middle-y">
-                <FaLock />
-              </span>
+              <button
+                type="button"
+                className="input-group-text bg-transparent border-0 position-absolute end-0 me-3 d-flex align-items-center top-50 translate-middle-y"
+                onClick={() => setShowPassword(!showPassword)} // Toggle visibility
+                style={{ cursor: "pointer" }}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />} {/* Toggle ikon mata */}
+              </button>
             </div>
           </div>
 
