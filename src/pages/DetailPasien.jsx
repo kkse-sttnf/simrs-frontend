@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import NavbarComponent from "../components/Navbar/NavbarComponent";
 import FooterComponent from "../components/Footer/FooterComponent";
 import SearchBar from "../components/Searchbar/Searchbar";
@@ -14,10 +14,19 @@ const DetailPasien = () => {
 
   // Ambil data dokter dari db.json
   useEffect(() => {
-    fetch("http://localhost:3001/dokter")
-      .then((response) => response.json())
-      .then((data) => setDokter(data))
-      .catch((error) => console.error("Error fetching dokter:", error));
+    const fetchDokter = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/dokter");
+        if (!response.ok) {
+          throw new Error("Gagal mengambil data dokter.");
+        }
+        const data = await response.json();
+        setDokter(data);
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+    fetchDokter();
   }, []);
 
   const handleSelectPatient = (patient) => {
@@ -25,8 +34,8 @@ const DetailPasien = () => {
   };
 
   const handleSaveRawatJalan = (data) => {
-    console.log("Data rawat jalan disimpan:", data);
-    // Lakukan sesuatu dengan data yang disimpan, misalnya refresh daftar rawat jalan
+    console.log("Data Rawat Jalan Disimpan:", data);
+    // Lakukan sesuatu dengan data yang disimpan, misalnya memperbarui state atau mengirim ke API
   };
 
   return (

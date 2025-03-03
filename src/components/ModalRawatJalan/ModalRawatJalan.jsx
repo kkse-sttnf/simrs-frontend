@@ -11,6 +11,7 @@ const ModalRawatJalan = ({
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState("");
 
+  // Reset form ketika modal ditutup
   useEffect(() => {
     if (!show) {
       setSelectedDoctor(null);
@@ -18,6 +19,7 @@ const ModalRawatJalan = ({
     }
   }, [show]);
 
+  // Handle simpan data
   const handleSave = async () => {
     if (!selectedDoctor || !selectedSchedule) {
       alert("Harap pilih dokter dan jadwal terlebih dahulu.");
@@ -26,7 +28,7 @@ const ModalRawatJalan = ({
 
     const data = {
       namaPasien: selectedPatient.NamaLengkap,
-      nomorIdentitas: selectedPatient.nomorIdentitas,
+      NIK: selectedPatient.NIK,
       namaDokter: selectedDoctor.namaDokter,
       spesialis: selectedDoctor.spesialis,
       nomorPraktek: selectedDoctor.nomorPraktek,
@@ -48,7 +50,8 @@ const ModalRawatJalan = ({
         throw new Error("Gagal menyimpan data.");
       }
 
-      onSave(data); // Kirim data ke komponen induk
+      // Panggil fungsi onSave untuk memperbarui state di komponen induk
+      onSave(data);
       handleClose(); // Tutup modal
     } catch (error) {
       console.error("Error:", error);
@@ -75,6 +78,20 @@ const ModalRawatJalan = ({
                       ? selectedPatient.NamaLengkap
                       : "Pasien tidak ditemukan"
                   }
+                  readOnly
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* NIK Pasien */}
+          <Row className="mb-3">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label>NIK</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={selectedPatient ? selectedPatient.NIK : ""}
                   readOnly
                 />
               </Form.Group>
@@ -160,7 +177,7 @@ const ModalRawatJalan = ({
                 <Form.Select
                   value={selectedSchedule}
                   onChange={(e) => setSelectedSchedule(e.target.value)}
-                  disabled={!selectedDoctor}
+                  disabled={!selectedDoctor} // Nonaktifkan jika dokter belum dipilih
                 >
                   <option value="">Pilih Jadwal</option>
                   {selectedDoctor && selectedDoctor.jadwalPraktek.length > 0 ? (
