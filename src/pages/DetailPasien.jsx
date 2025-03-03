@@ -8,7 +8,6 @@ import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
 const DetailPasien = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
 
-
   const handleSelectPatient = (patient) => {
     setSelectedPatient(patient);
   };
