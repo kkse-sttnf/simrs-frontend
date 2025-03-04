@@ -77,7 +77,7 @@
   ],
   "dokter": [
     {
-      "id": 1,
+      "id": "1",
       "namaDokter": "Dr. Ahmad Fauzi",
       "spesialis": "Dokter Umum",
       "noPegawai": "12345",
@@ -93,6 +93,21 @@
           "hariPraktek": "Rabu",
           "waktuMulai": "10:00",
           "waktuSelesai": "14:00"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "namaDokter": "qsqs",
+      "noPegawai": "qsq",
+      "spesialis": "qsq",
+      "nomorPraktek": "qsq",
+      "ruangPraktek": "qsq",
+      "jadwalPraktek": [
+        {
+          "hariPraktek": "Selasa",
+          "waktuMulai": "12:21",
+          "waktuSelesai": "11:11"
         }
       ]
     }
@@ -111,7 +126,7 @@
   ],
   "rawatJalan": [
     {
-      "id": 1,
+      "id": "1",
       "namaPasien": "John Doe",
       "NIK": "1234567890123456",
       "namaDokter": "Dr. Jane Smith",
@@ -121,7 +136,7 @@
       "ruangPraktek": "Ruang 101"
     },
     {
-      "id": 2,
+      "id": "2",
       "namaPasien": "Alice Johnson",
       "NIK": "1234567890123466",
       "namaDokter": "Dr. John Doe",
@@ -152,16 +167,6 @@
     },
     {
       "id": "c98c",
-      "namaPasien": "Aisha Rahman",
-      "NIK": "1234567890123456",
-      "namaDokter": "Dr. Ahmad Fauzi",
-      "spesialis": "Dokter Umum",
-      "nomorPraktek": "P001",
-      "jadwalDokter": "Senin 08:00 - 12:00",
-      "ruangPraktek": "Ruang 101"
-    },
-    {
-      "id": "f6ed",
       "namaPasien": "Aisha Rahman",
       "NIK": "1234567890123456",
       "namaDokter": "Dr. Ahmad Fauzi",

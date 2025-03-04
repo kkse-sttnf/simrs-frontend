@@ -21,6 +21,7 @@ const DetailPasien = () => {
           throw new Error("Gagal mengambil data dokter.");
         }
         const data = await response.json();
+        console.log("Data Dokter:", data); // Debugging
         setDokter(data);
       } catch (error) {
         console.error("Error:", error);

@@ -106,8 +106,9 @@ const ModalRawatJalan = ({
                 <Form.Select
                   value={selectedDoctor ? selectedDoctor.id : ""}
                   onChange={(e) => {
-                    const doctorId = parseInt(e.target.value);
+                    const doctorId = e.target.value;
                     const doctor = dokter.find((d) => d.id === doctorId);
+                    console.log("Selected Doctor:", doctor); // Debugging
                     setSelectedDoctor(doctor);
                     setSelectedSchedule("");
                   }}
