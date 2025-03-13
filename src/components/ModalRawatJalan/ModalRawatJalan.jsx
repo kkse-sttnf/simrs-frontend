@@ -108,7 +108,6 @@ const ModalRawatJalan = ({
                   onChange={(e) => {
                     const doctorId = e.target.value;
                     const doctor = dokter.find((d) => d.id === doctorId);
-                    console.log("Selected Doctor:", doctor); // Debugging
                     setSelectedDoctor(doctor);
                     setSelectedSchedule("");
                   }}

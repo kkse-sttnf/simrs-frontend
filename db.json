@@ -110,6 +110,21 @@
           "waktuSelesai": "11:11"
         }
       ]
+    },
+    {
+      "id": "2b7d",
+      "namaDokter": "Dr.Yaasir",
+      "noPegawai": "101010",
+      "spesialis": "Koding",
+      "nomorPraktek": "KD01",
+      "ruangPraktek": "B1-101",
+      "jadwalPraktek": [
+        {
+          "hariPraktek": "Senin",
+          "waktuMulai": "10:00",
+          "waktuSelesai": "13:00"
+        }
+      ]
     }
   ],
   "users": [
@@ -174,6 +189,26 @@
       "nomorPraktek": "P001",
       "jadwalDokter": "Senin 08:00 - 12:00",
       "ruangPraktek": "Ruang 101"
+    },
+    {
+      "id": "d32e",
+      "namaPasien": "Rahman",
+      "NIK": "1234567890123456",
+      "namaDokter": "Dr.Yaasir",
+      "spesialis": "Koding",
+      "nomorPraktek": "KD01",
+      "jadwalDokter": "Senin 10:00 - 13:00",
+      "ruangPraktek": "B1-101"
+    },
+    {
+      "id": "f036",
+      "namaPasien": "Rahman",
+      "NIK": "1234567890123456",
+      "namaDokter": "Dr.Yaasir",
+      "spesialis": "Koding",
+      "nomorPraktek": "KD01",
+      "jadwalDokter": "Senin 10:00 - 13:00",
+      "ruangPraktek": "B1-101"
     }
   ]
 }
