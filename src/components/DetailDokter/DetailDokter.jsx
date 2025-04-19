@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Container, Card, Form, Row, Col, Button } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { getContract } from "../../utils/doctorContract";
 
 const DetailDokter = ({ selectedDokter }) => {
   const [dokter, setDokter] = useState(selectedDokter || {});
@@ -13,8 +14,19 @@ const DetailDokter = ({ selectedDokter }) => {
   }, [selectedDokter]);
 
   // Fungsi untuk navigasi ke halaman TambahDokter
-  const handleTambahDokter = () => {
-    navigate("/DataDokter/TambahDokter");
+  const handleTambahDokter = async () => {
+    var name = "Salman El farisi, S.Kom., M.Kom.";
+    var nik = "60124077652111";
+    var strNumber = "0110224243123";
+
+    var contract = await getContract();
+    console.log(contract);
+    contract.registerDoctor(name, nik, strNumber);
+    contract.on("DoctorRegistered", (a, b, c, d) => {
+      console.log(a, b, c, d)
+    })
+
+    //navigate("/DataDokter/TambahDokter");
   };
 
   return (
