@@ -1,16 +1,14 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import { getProvider, getSigner } from "../../utils/ethersProvider";
 
 const ProtectedRoute = () => {
-  const isLoggedIn = sessionStorage.getItem("isLoggedIn");
+  const provider = getProvider();
+  const signer = getSigner();
 
-  // Jika pengguna belum login, redirect ke halaman login
-  if (isLoggedIn !== "true") {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Jika pengguna sudah login, tampilkan rute yang diminta
-  return <Outlet />;
+  if (provider && signer) return <Outlet />
+  
+  return <Navigate to={"/login"} />
 };
 
 export default ProtectedRoute;

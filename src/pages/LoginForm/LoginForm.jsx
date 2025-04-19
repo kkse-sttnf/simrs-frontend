@@ -1,51 +1,14 @@
-import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa"; // Tambahkan FaEye dan FaEyeSlash
 import SecureImage from "../../assets/images/Secure-login.png";
+import { initializeEthers } from "../../utils/ethersProvider";
 
 const LoginForm = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // State untuk toggle visibility
   const navigate = useNavigate();
-
   const handleLogin = async (e) => {
-    e.preventDefault();
-
-    try {
-      // Mengambil data pengguna dari json-server
-      const response = await fetch("http://localhost:3001/users");
-      if (!response.ok) throw new Error("Gagal mengambil data pengguna!");
-
-      const users = await response.json();
-
-      // Cari pengguna yang sesuai
-      const user = users.find(
-        (u) => u.username === username && u.password === password
-      );
-
-      if (user) {
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("username", user.username);
-        alert("Login Berhasil!");
-        navigate("/DetailPasien");
-      } else {
-        alert("Username atau Password salah!");
-      }
-    } catch (error) {
-      console.error("Kesalahan:", error);
-      alert("Terjadi kesalahan saat login. Silakan coba lagi.");
-    }
+    await initializeEthers();
+    navigate("/DetailPasien");
   };
-
-  useEffect(() => {
-    // Cek apakah pengguna sudah login
-    const isLoggedIn = sessionStorage.getItem("isLoggedIn");
-    if (isLoggedIn === "true") {
-      navigate("/DetailPasien");
-    }
-  }, [navigate]);
 
   return (
     <div className="container-fluid vh-100 vw-100 d-flex p-0">
@@ -64,65 +27,10 @@ const LoginForm = () => {
 
       {/* Bagian Kanan - Form Login */}
       <div className="col-md-6 d-flex flex-column align-items-center justify-content-center p-5">
-        <form
-          onSubmit={handleLogin}
-          className="w-100"
-          style={{ maxWidth: "400px" }}
-        >
-          <h1 className="text-center fw-bold mb-4">Login</h1>
-
-          <div className="mb-3 position-relative">
-            <label htmlFor="Username" className="form-label fw-bold">
-              Username
-            </label>
-            <div className="input-group">
-              <input
-                type="text"
-                id="Username"
-                className="form-control rounded-pill"
-                placeholder="Masukan Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-              <span className="input-group-text bg-transparent border-0 position-absolute end-0 me-3 d-flex align-items-center top-50 translate-middle-y">
-                <FaUser />
-              </span>
-            </div>
-          </div>
-
-          <div className="mb-3 position-relative">
-            <label htmlFor="Password" className="form-label fw-bold">
-              Password
-            </label>
-            <div className="input-group">
-              <input
-                type={showPassword ? "text" : "password"} // Toggle tipe input
-                id="Password"
-                className="form-control rounded-pill"
-                placeholder="Masukan Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className="input-group-text bg-transparent border-0 position-absolute end-0 me-3 d-flex align-items-center top-50 translate-middle-y"
-                onClick={() => setShowPassword(!showPassword)} // Toggle visibility
-                style={{ cursor: "pointer" }}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />} {/* Toggle ikon mata */}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary w-100 rounded-pill fw-bold"
-          >
-            Login
-          </button>
-        </form>
+        <button
+          className="btn btn-outline-primary mb-4"
+          onClick={handleLogin}
+        >Connect Metamask</button>
       </div>
     </div>
   );
