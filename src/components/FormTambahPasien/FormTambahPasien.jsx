@@ -3,6 +3,8 @@ import { Container, Card, Button, Form, Row, Col } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { getPinata } from "../../utils/pinataProvider";
+import { getProvider } from "../../utils/ethersProvider";
 
 const FormTambahPasien = () => {
   const navigate = useNavigate();
@@ -65,6 +67,13 @@ const FormTambahPasien = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
+          const jsonFormData = JSON.stringify(formData);
+          const pinata = getPinata();
+          const upload = await pinata.upload.public.json(jsonFormData);
+          const cid = upload.cid;
+
+          const provider = getProvider();
+          
           const response = await fetch("http://localhost:3001/pasien", {
             method: "POST",
             headers: {
