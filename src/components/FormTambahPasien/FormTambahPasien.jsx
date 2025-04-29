@@ -79,7 +79,7 @@ const FormTambahPasien = () => {
           patientContract.savePatientData(nik, cid);
           patientContract.on("PatientRegistered", (evCid, evNik, evMrHash) => {
             console.log("success: ", evCid, evNik, evMrHash)
-            navigate("/detail-pasien");
+            navigate("/DetailPasien");
             setFormData({
               namaLengkap: "",
               noTelpRumah: "",
