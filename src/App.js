@@ -43,7 +43,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/DetailPasien" element={<DetailPasien />} />
           <Route path="/DataDokter" element={<DataDokter />} />
-          <Route path="/TambahPasien" element={<TambahPasien />} />
+          <Route path="/DetailPasien/TambahPasien" element={<TambahPasien />} />
           <Route path="/RawatJalan" element={<RawatJalan />} />
           <Route path="/DataDokter/TambahDokter" element={<TambahDokter />} />
           <Route path="/DataDokter/DetailDokter/:id" element={<DetailDokter />} />
