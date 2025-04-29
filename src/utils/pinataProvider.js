@@ -6,5 +6,7 @@ const pinata = new PinataSDK({
 })
 
 export const getPinata = () => {
+    console.log(process.env.REACT_APP_PINATA_GATEWAY)
+    console.log(process.env.REACT_APP_PINATA_JWT)
     return pinata;
 }

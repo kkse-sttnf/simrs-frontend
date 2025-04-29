@@ -68,7 +68,7 @@ const FormTambahPasien = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const jsonFormData = JSON.stringify(formData);
+          const jsonFormData = formData;
           const pinata = getPinata();
           const dataName = uuidV4(randomBytes(16)) + ".json";
           console.log(dataName);
