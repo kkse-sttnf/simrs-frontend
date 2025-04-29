@@ -1,5 +1,4 @@
-import { getProvider } from './ethersProvider';
-import { Contract } from 'ethers';
+import { ethers } from 'ethers';
 
 const contractAddress = '0x12bfa29c82453f4ba290f090d1af8350b44f5cd0';
 const contractAbi = [
@@ -18,16 +17,31 @@ const contractAbi = [
     'function registerSchedule(uint256 doctorId, uint8 day, string start, string end, string room)',
     'function scheduleCount() view returns (uint256)',
     'function schedules(uint256) view returns (uint256 id, uint256 doctorId, uint8 day, string start, string end, string room)'
-]
+];
 
-let contract = null;
+let contractInstance = null;
 
 export const getContract = async () => {
-    if (!contract) {
-        const provider = getProvider();
-        const signer = await provider.getSigner();
-        contract = new Contract(contractAddress, contractAbi, signer);
+    if (!window.ethereum) {
+        throw new Error('Aplikasi memerlukan MetaMask. Pastikan Anda sudah login.');
     }
 
-    return contract;
-}
+    if (contractInstance) {
+        return contractInstance;
+    }
+
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        contractInstance = new ethers.Contract(contractAddress, contractAbi, signer);
+        return contractInstance;
+    } catch (error) {
+        console.error('Gagal menginisialisasi kontrak:', error);
+        throw new Error('Gagal terhubung dengan kontrak. Pastikan Anda sudah login dengan MetaMask.');
+    }
+};
+
+// Fungsi untuk reset kontrak (misal saat logout)
+export const resetContract = () => {
+    contractInstance = null;
+};

@@ -1,13 +1,24 @@
-import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
-import { getProvider } from "../../utils/ethersProvider";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 const ProtectedRoute = () => {
-  const provider = getProvider();
+  const location = useLocation();
+  const isAuthenticated = !!sessionStorage.getItem("walletAddress") && 
+                         !!sessionStorage.getItem("isLoggedIn");
 
-  if (provider) return <Outlet />
-  
-  return <Navigate to={"/login"} />
+  console.log('ProtectedRoute check:', {
+    isAuthenticated,
+    walletAddress: sessionStorage.getItem("walletAddress"),
+    isLoggedIn: sessionStorage.getItem("isLoggedIn"),
+    currentPath: location.pathname
+  });
+
+  if (!isAuthenticated) {
+    console.log('Storing redirect path:', location.pathname);
+    sessionStorage.setItem('redirectPath', location.pathname);
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

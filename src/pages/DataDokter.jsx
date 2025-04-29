@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import NavbarComponent from "../components/Navbar/NavbarComponent";
 import FooterComponent from "../components/Footer/FooterComponent";
 import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
-import DetailDokter from "../components/DetailDokter/DetailDokter";
+import ListDokter from "../components/DataDokter/DataDokter";
 import SearchbarDokter from "../components/SearchbarDokter/Searchbardokter";
 
 const DataDokter = () => {
@@ -12,8 +12,8 @@ const DataDokter = () => {
     <div>
       <NavbarComponent />
       <Breadcrumbs />
-      <SearchbarDokter onSelectDokter={setSelectedDokter} />
-      <DetailDokter selectedDokter={selectedDokter} />
+      {/* <SearchbarDokter onSelectDokter={setSelectedDokter} /> */}
+      <ListDokter selectedDokter={selectedDokter} />
       <FooterComponent />
     </div>
   );
