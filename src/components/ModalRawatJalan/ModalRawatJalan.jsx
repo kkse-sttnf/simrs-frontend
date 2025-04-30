@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Form, Row, Col } from "react-bootstrap";
+import { Modal, Button, Form, Row, Col, Spinner, Alert } from "react-bootstrap";
+import { getContract } from "../../utils/doctorContract";
+
 
 const ModalRawatJalan = ({
   show,
@@ -7,24 +9,79 @@ const ModalRawatJalan = ({
   selectedPatient,
   dokter = [],
   onSave,
+  loadingDokter,
+  errorDokter
 }) => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState("");
+  const [doctorSchedules, setDoctorSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [scheduleError, setScheduleError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset form ketika modal ditutup
+   // Fungsi untuk mengambil jadwal dokter dari blockchain
+   const fetchDoctorSchedules = async (doctorId) => {
+    if (!doctorId) return;
+    
+    setLoadingSchedules(true);
+    setScheduleError(null);
+    setSelectedSchedule("");
+
+    try {
+      const contract = await getContract();
+      const schedules = await contract.getDoctorSchedules(doctorId);
+      
+      // Konversi data jadwal dari blockchain ke format yang diharapkan
+      const formattedSchedules = schedules.map(schedule => ({
+        id: schedule.id.toString(),
+        hariPraktek: convertDayNumber(schedule.day),
+        waktuMulai: schedule.start,
+        waktuSelesai: schedule.end,
+        ruangPraktek: schedule.room
+      }));
+
+      setDoctorSchedules(formattedSchedules);
+    } catch (error) {
+      console.error("Gagal memuat jadwal:", error);
+      setScheduleError("Gagal memuat jadwal dokter");
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
+
+  // Konversi angka hari ke nama hari
+  const convertDayNumber = (dayNum) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return days[dayNum] || `Hari-${dayNum}`;
+  };
+
+  // Load jadwal ketika dokter dipilih
+  useEffect(() => {
+    if (selectedDoctor?.id) {
+      fetchDoctorSchedules(selectedDoctor.id);
+    } else {
+      setDoctorSchedules([]);
+    }
+  }, [selectedDoctor]);
+
+  // Reset form saat modal ditutup
   useEffect(() => {
     if (!show) {
       setSelectedDoctor(null);
       setSelectedSchedule("");
+      setDoctorSchedules([]);
     }
   }, [show]);
 
-  // Handle simpan data
   const handleSave = async () => {
     if (!selectedDoctor || !selectedSchedule) {
-      alert("Harap pilih dokter dan jadwal terlebih dahulu.");
+      alert("Harap pilih dokter dan jadwal terlebih dahulu");
       return;
     }
+
+    const selectedScheduleData = doctorSchedules.find(
+      s => `${s.hariPraktek} ${s.waktuMulai} - ${s.waktuSelesai}` === selectedSchedule
+    );
 
     const data = {
       namaPasien: selectedPatient.NamaLengkap,
@@ -33,31 +90,19 @@ const ModalRawatJalan = ({
       spesialis: selectedDoctor.spesialis,
       nomorPraktek: selectedDoctor.nomorPraktek,
       jadwalDokter: selectedSchedule,
-      ruangPraktek: selectedDoctor.ruangPraktek,
+      ruangPraktek: selectedScheduleData?.ruangPraktek || selectedDoctor.ruangPraktek,
     };
 
     try {
-      // Simpan data ke db.json
-      const response = await fetch("http://localhost:3001/rawatJalan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error("Gagal menyimpan data.");
-      }
-
-      // Panggil fungsi onSave untuk memperbarui state di komponen induk
-      onSave(data);
-      handleClose(); // Tutup modal
+      await onSave(data);
+      handleClose();
     } catch (error) {
       console.error("Error:", error);
-      alert("Terjadi kesalahan saat menyimpan data.");
+      alert("Terjadi kesalahan saat menyimpan data");
     }
   };
+
+  
 
   return (
     <Modal show={show} onHide={handleClose} size="lg">
@@ -65,6 +110,8 @@ const ModalRawatJalan = ({
         <Modal.Title>Pendaftaran Rawat Jalan</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {errorDokter && <Alert variant="danger">{errorDokter}</Alert>}
+        
         <Form>
           {/* Nama Pasien */}
           <Row className="mb-3">
@@ -73,11 +120,7 @@ const ModalRawatJalan = ({
                 <Form.Label>Nama Pasien</Form.Label>
                 <Form.Control
                   type="text"
-                  value={
-                    selectedPatient
-                      ? selectedPatient.NamaLengkap
-                      : "Pasien tidak ditemukan"
-                  }
+                  value={selectedPatient?.NamaLengkap || "Pasien tidak ditemukan"}
                   readOnly
                 />
               </Form.Group>
@@ -91,7 +134,7 @@ const ModalRawatJalan = ({
                 <Form.Label>NIK</Form.Label>
                 <Form.Control
                   type="text"
-                  value={selectedPatient ? selectedPatient.NIK : ""}
+                  value={selectedPatient?.NIK || ""}
                   readOnly
                 />
               </Form.Group>
@@ -103,28 +146,35 @@ const ModalRawatJalan = ({
             <Col md={12}>
               <Form.Group>
                 <Form.Label>Pilih Dokter</Form.Label>
-                <Form.Select
-                  value={selectedDoctor ? selectedDoctor.id : ""}
-                  onChange={(e) => {
-                    const doctorId = e.target.value;
-                    const doctor = dokter.find((d) => d.id === doctorId);
-                    setSelectedDoctor(doctor);
-                    setSelectedSchedule("");
-                  }}
-                >
-                  <option value="">Pilih Dokter</option>
-                  {dokter.length > 0 ? (
-                    dokter.map((doctor) => (
+                {loadingDokter ? (
+                  <div className="text-center">
+                    <Spinner size="sm" animation="border" />
+                    <span> Memuat data dokter...</span>
+                  </div>
+                ) : (
+                  <Form.Select
+                    value={selectedDoctor?.id || ""}
+                    onChange={(e) => {
+                      const doctorId = e.target.value;
+                      const doctor = dokter.find((d) => d.id === doctorId);
+                      setSelectedDoctor(doctor);
+                      setSelectedSchedule("");
+                    }}
+                    disabled={loadingDokter || dokter.length === 0}
+                  >
+                    <option value="">Pilih Dokter</option>
+                    {dokter.map((doctor) => (
                       <option key={doctor.id} value={doctor.id}>
-                        {doctor.namaDokter} - {doctor.spesialis}
+                        {doctor.namaDokter}
                       </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>
-                      Tidak ada data dokter
-                    </option>
-                  )}
-                </Form.Select>
+                    ))}
+                  </Form.Select>
+                )}
+                {dokter.length === 0 && !loadingDokter && (
+                  <div className="text-danger mt-1">
+                    Tidak ada data dokter tersedia
+                  </div>
+                )}
               </Form.Group>
             </Col>
           </Row>
@@ -133,7 +183,7 @@ const ModalRawatJalan = ({
           {selectedDoctor && (
             <>
               <Row className="mb-3">
-                <Col md={6}>
+                <Col md={12}>
                   <Form.Group>
                     <Form.Label>Spesialis</Form.Label>
                     <Form.Control
@@ -143,28 +193,8 @@ const ModalRawatJalan = ({
                     />
                   </Form.Group>
                 </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Nomor Praktek</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedDoctor.nomorPraktek}
-                      readOnly
-                    />
-                  </Form.Group>
-                </Col>
               </Row>
               <Row className="mb-3">
-                <Col md={12}>
-                  <Form.Group>
-                    <Form.Label>Ruang Praktek</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedDoctor.ruangPraktek}
-                      readOnly
-                    />
-                  </Form.Group>
-                </Col>
               </Row>
             </>
           )}
@@ -177,11 +207,11 @@ const ModalRawatJalan = ({
                 <Form.Select
                   value={selectedSchedule}
                   onChange={(e) => setSelectedSchedule(e.target.value)}
-                  disabled={!selectedDoctor} // Nonaktifkan jika dokter belum dipilih
+                  disabled={!selectedDoctor}
                 >
                   <option value="">Pilih Jadwal</option>
-                  {selectedDoctor && selectedDoctor.jadwalPraktek.length > 0 ? (
-                    selectedDoctor.jadwalPraktek.map((jadwal, index) => (
+                  {selectedDoctor && doctorSchedules.length > 0 ? (
+                    doctorSchedules.map((jadwal, index) => (
                       <option
                         key={index}
                         value={`${jadwal.hariPraktek} ${jadwal.waktuMulai} - ${jadwal.waktuSelesai}`}
@@ -191,7 +221,7 @@ const ModalRawatJalan = ({
                     ))
                   ) : (
                     <option value="" disabled>
-                      Tidak ada jadwal tersedia
+                      {selectedDoctor ? "Tidak ada jadwal tersedia" : "Pilih dokter terlebih dahulu"}
                     </option>
                   )}
                 </Form.Select>
@@ -201,11 +231,22 @@ const ModalRawatJalan = ({
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
+        <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
           Batal
         </Button>
-        <Button variant="primary" onClick={handleSave}>
-          Simpan
+        <Button 
+          variant="primary" 
+          onClick={handleSave}
+          disabled={isSubmitting || !selectedDoctor || !selectedSchedule}
+        >
+          {isSubmitting ? (
+            <>
+              <Spinner as="span" size="sm" animation="border" role="status" />
+              {' Menyimpan...'}
+            </>
+          ) : (
+            'Simpan'
+          )}
         </Button>
       </Modal.Footer>
     </Modal>

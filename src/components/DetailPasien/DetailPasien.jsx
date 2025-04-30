@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Container, Form, Row, Col, Button, Card } from "react-bootstrap";
+import { Container, Form, Row, Col, Button, Card, Spinner, Alert } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import ModalRawatJalan from "../ModalRawatJalan/ModalRawatJalan";
 
-const DetailDataPasien = ({ selectedPatient }) => {
+const DetailDataPasien = ({ 
+  selectedPatient, 
+  dokter, 
+  loadingDokter, 
+  errorDokter,
+  onShowModal
+}) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     namaLengkap: "",
@@ -42,51 +48,6 @@ const DetailDataPasien = ({ selectedPatient }) => {
     provinsiDomisili: "",
     negaraDomisili: "",
   });
-
-  const [dokter, setDokter] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-
-  // Ambil data dokter dari API
-  useEffect(() => {
-    const fetchDokter = async () => {
-      try {
-        const response = await fetch("http://localhost:3001/dokter");
-        if (!response.ok) throw new Error("Gagal mengambil data dokter.");
-        const data = await response.json();
-        console.log("Data Dokter dari API:", data.dokter || data); // Debugging
-        if (data.dokter) {
-          setDokter(data.dokter); // Simpan data dokter ke state
-        } else if (Array.isArray(data)) {
-          setDokter(data); // Jika respons langsung berupa array
-        } else {
-          console.error("Data dokter tidak valid:", data);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    };
-  
-    fetchDokter();
-  }, []);
-  
-
-  // Fungsi untuk menyimpan data pendaftaran rawat jalan
-  const handleSaveRegistration = async (data) => {
-    try {
-      const response = await fetch("http://localhost:3001/rawatJalan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Gagal menyimpan data pendaftaran.");
-      alert("Pendaftaran berhasil disimpan!");
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Terjadi kesalahan saat menyimpan data.");
-    }
-  };
 
   // Fungsi untuk mengonversi angka jenis kelamin ke teks
   const getJenisKelaminText = (value) => {
@@ -229,8 +190,6 @@ const DetailDataPasien = ({ selectedPatient }) => {
     navigate("/DetailPasien/TambahPasien");
   };
 
-  
-
   return (
     <Container className="mt-4 my-4">
       <Card className="shadow p-3">
@@ -240,11 +199,12 @@ const DetailDataPasien = ({ selectedPatient }) => {
           <Button
             variant="light"
             className="text-primary fw-bold"
-            onClick={handleTambahPasien} // Tambahkan onClick handler
+            onClick={handleTambahPasien}
           >
             +
           </Button>
         </div>
+        
         {/* Form */}
         <Form className="mt-3">
           <Row className="mb-3">
@@ -682,19 +642,16 @@ const DetailDataPasien = ({ selectedPatient }) => {
 
           {/* Tombol Batal & Simpan */}
           <div className="d-flex justify-content-end gap-2 mt-3">
-            <Button variant="success" onClick={() => setShowModal(true)}>
+            <Button 
+              variant="success" 
+              onClick={onShowModal}
+              // disabled={loadingDokter || errorDokter || !selectedPatient}
+            >
               <FaSave /> Daftar Rawat Jalan
             </Button>
           </div> 
         </Form>
       </Card>
-      <ModalRawatJalan
-        show={showModal}
-        handleClose={() => setShowModal(false)}
-        selectedPatient={selectedPatient}
-        dokter={dokter}
-        onSave={handleSaveRegistration}
-      />
     </Container>
   );
 };
