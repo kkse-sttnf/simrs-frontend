@@ -6,7 +6,6 @@ import DetailDataPasien from "../components/DetailPasien/DetailPasien";
 import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
 import ModalRawatJalan from "../components/ModalRawatJalan/ModalRawatJalan";
 import { getContract } from "../utils/doctorContract";
-import { ethers } from "ethers";
 
 const DetailPasien = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -14,8 +13,12 @@ const DetailPasien = () => {
   const [dokter, setDokter] = useState([]);
   const [loadingDokter, setLoadingDokter] = useState(false);
   const [errorDokter, setErrorDokter] = useState(null);
+  const [searchStatus, setSearchStatus] = useState({
+    loading: false,
+    error: null,
+    success: false
+  });
 
-  // Fungsi untuk mengambil data dokter dari blockchain
   const fetchDoctorsFromBlockchain = async () => {
     setLoadingDokter(true);
     setErrorDokter(null);
@@ -23,25 +26,22 @@ const DetailPasien = () => {
     try {
       const contract = await getContract();
       
-      // Coba gunakan listOfDoctors terlebih dahulu
       try {
         const doctorList = await contract.listOfDoctors();
-        console.log("Raw doctor data from blockchain:", doctorList);
         
         const formattedDoctors = doctorList.map(doctor => ({
           id: doctor.id.toString(),
           namaDokter: doctor.name,
           nik: doctor.nik,
           nomorPraktek: doctor.strNumber,
-          spesialis: doctor.specialty || "Umum", // Default value
-          ruangPraktek: doctor.room || "Ruang Praktek 1" // Default value
+          spesialis: doctor.specialty || "Umum",
+          ruangPraktek: doctor.room || "Ruang Praktek 1"
         }));
         
         setDokter(formattedDoctors);
       } catch (listError) {
         console.log("Menggunakan fallback doctorCount:", listError);
         
-        // Fallback ke doctorCount jika listOfDoctors tidak tersedia
         const doctorCount = await contract.doctorCount();
         const doctors = [];
         
@@ -52,8 +52,8 @@ const DetailPasien = () => {
             namaDokter: doctor.name,
             nik: doctor.nik,
             nomorPraktek: doctor.strNumber,
-            spesialis: "Umum", // Default value
-            ruangPraktek: "Ruang Praktek 1" // Default value
+            spesialis: "Umum",
+            ruangPraktek: "Ruang Praktek 1"
           });
         }
         
@@ -73,11 +73,19 @@ const DetailPasien = () => {
 
   const handleSelectPatient = (patient) => {
     setSelectedPatient(patient);
+    setSearchStatus({
+      loading: false,
+      error: null,
+      success: true
+    });
+  };
+
+  const handleSearchStatus = (status) => {
+    setSearchStatus(status);
   };
 
   const handleSaveRawatJalan = (data) => {
     console.log("Data Rawat Jalan Disimpan:", data);
-    // Lakukan sesuatu dengan data yang disimpan
     setShowModal(false);
   };
 
@@ -85,8 +93,26 @@ const DetailPasien = () => {
     <div>
       <NavbarComponent />
       <Breadcrumbs />
-      <SearchBar onSelectPatient={handleSelectPatient} />
+      <SearchBar 
+        onSelectPatient={handleSelectPatient} 
+        onSearchStatus={handleSearchStatus}
+      />
       
+      {searchStatus.loading && (
+        <div className="text-center my-4">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p>Mencari data pasien...</p>
+        </div>
+      )}
+      
+      {searchStatus.error && (
+        <div className="alert alert-danger mx-3">
+          {searchStatus.error}
+        </div>
+      )}
+
       {loadingDokter && (
         <div className="text-center my-4">
           <div className="spinner-border text-primary" role="status">
@@ -114,6 +140,7 @@ const DetailPasien = () => {
         loadingDokter={loadingDokter}
         errorDokter={errorDokter}
         onShowModal={() => setShowModal(true)}
+        searchStatus={searchStatus}
       />
       
       <ModalRawatJalan

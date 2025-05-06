@@ -15,7 +15,7 @@ const FormTambahDokter = () => {
     namaDokter: "",
     nik: "",
     strNumber: "",
-    spesialisasi: "" // Will be stored locally but not sent to contract
+    spesialisasi: "" 
   });
 
   useEffect(() => {

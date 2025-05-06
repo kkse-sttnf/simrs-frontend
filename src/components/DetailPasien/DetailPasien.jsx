@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Container, Form, Row, Col, Button, Card, Spinner, Alert } from "react-bootstrap";
+import { Container, Form, Row, Col, Button, Card, Alert } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import ModalRawatJalan from "../ModalRawatJalan/ModalRawatJalan";
 
 const DetailDataPasien = ({ 
   selectedPatient, 
   dokter, 
   loadingDokter, 
   errorDokter,
-  onShowModal
+  onShowModal,
+  searchStatus
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -49,99 +49,63 @@ const DetailDataPasien = ({
     negaraDomisili: "",
   });
 
-  // Fungsi untuk mengonversi angka jenis kelamin ke teks
   const getJenisKelaminText = (value) => {
     switch (value) {
-      case 0:
-        return "Tidak diketahui";
-      case 1:
-        return "Laki-laki";
-      case 2:
-        return "Perempuan";
-      case 3:
-        return "Tidak dapat ditentukan";
-      default:
-        return "Tidak valid";
+      case 0: return "Tidak diketahui";
+      case 1: return "Laki-laki";
+      case 2: return "Perempuan";
+      case 3: return "Tidak dapat ditentukan";
+      default: return "Tidak valid";
     }
   };
 
   const getAgama = (value) => {
     switch (value) {
-      case 0:
-        return "Tidak diketahui";
-      case 1:
-        return "Islam";
-      case 2:
-        return "Kristen (Protestan)";
-      case 3:
-        return "Katolik";
-      case 4:
-        return "Hindu";
-      case 5:
-        return "Budha";
-      case 6:
-        return "Konghucu";
-      case 7:
-        return "Penghayat";
-      default:
-        return "Tidak valid";
+      case 0: return "Tidak diketahui";
+      case 1: return "Islam";
+      case 2: return "Kristen (Protestan)";
+      case 3: return "Katolik";
+      case 4: return "Hindu";
+      case 5: return "Budha";
+      case 6: return "Konghucu";
+      case 7: return "Penghayat";
+      default: return "Tidak valid";
     }
   };
 
   const getPendidikan = (value) => {
     switch (value) {
-      case 0:
-        return "Tidak sekolah";
-      case 1:
-        return "SD";
-      case 2:
-        return "SLTP sederajat";
-      case 3:
-        return "SLTA sederajat";
-      case 4:
-        return "D1-D3 sederajat";
-      case 5:
-        return "D4";
-      case 6:
-        return "S1";
-      case 7:
-        return "S2";
-      case 8:
-        return "S3";
-      default:
-        return "Tidak valid";
+      case 0: return "Tidak sekolah";
+      case 1: return "SD";
+      case 2: return "SLTP sederajat";
+      case 3: return "SLTA sederajat";
+      case 4: return "D1-D3 sederajat";
+      case 5: return "D4";
+      case 6: return "S1";
+      case 7: return "S2";
+      case 8: return "S3";
+      default: return "Tidak valid";
     }
   };
 
   const getPerkerjaan = (value) => {
     switch (value) {
-      case 0:
-        return "Tidak bekerja";
-      case 1:
-        return "PNS";
-      case 2:
-        return "TNI/POLRI";
-      case 3:
-        return "BUMN";
-      case 4:
-        return "Pegawai/Wirausaha";
-      default:
-        return "Tidak valid";
+      case 0: return "Tidak bekerja";
+      case 1: return "PNS";
+      case 2: return "TNI/POLRI";
+      case 3: return "BUMN";
+      case 4: return "Pegawai/Wirausaha";
+      default: return "Tidak valid";
     }
   };
 
   const getPernikahan = (value) => {
     switch (value) {
-      case 1:
-        return "Belum Kawin";
-      case 2:
-        return "Kawin";
-      case 3:
-        return "Cerai Hidup";
-      case 4:
-        return "Cerai Mati";
-      default:
-        return "Tidak valid";
+      case 1: return "Belum Kawin";
+      case 2: return "Kawin";
+      case 3: return "Cerai Hidup";
+      case 4: return "Cerai Mati";
+      default: return "Tidak valid";
     }
   };
 
@@ -183,6 +147,43 @@ const DetailDataPasien = ({
         provinsiDomisili: selectedPatient.ProvinsiDomisili || "",
         negaraDomisili: selectedPatient.NegaraDomisili || "",
       });
+    } else {
+      setFormData({
+        namaLengkap: "",
+        nomorRekamMedis: "",
+        nik: "",
+        nomorIdentitasLain: "",
+        namaIbuKandung: "",
+        tempatLahir: "",
+        tanggalLahir: "",
+        jenisKelamin: "",
+        agama: "",
+        suku: "",
+        bahasaDikuasai: "",
+        alamatLengkap: "",
+        rt: "",
+        rw: "",
+        kelurahan: "",
+        kecamatan: "",
+        kabupaten: "",
+        kodePos: "",
+        provinsi: "",
+        negara: "",
+        nomorTeleponRumah: "",
+        nomorTeleponSelular: "",
+        pendidikan: "",
+        pekerjaan: "",
+        statusPernikahan: "",
+        alamatDomisili: "",
+        rtDomisili: "",
+        rwDomisili: "",
+        kelurahanDomisili: "",
+        kecamatanDomisili: "",
+        kabupatenDomisili: "",
+        kodePosDomisili: "",
+        provinsiDomisili: "",
+        negaraDomisili: "",
+      });
     }
   }, [selectedPatient]);
 
@@ -190,10 +191,43 @@ const DetailDataPasien = ({
     navigate("/DetailPasien/TambahPasien");
   };
 
+  if (searchStatus.loading) {
+    return null;
+  }
+
+  if (searchStatus.error) {
+    return (
+      <Container className="mt-4">
+        <Alert variant="danger">
+          {searchStatus.error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!selectedPatient) {
+    return (
+      <Container className="mt-4">
+        <Card className="text-center p-4">
+          <h4>Silakan cari pasien menggunakan NIK atau Nomor Rekam Medis</h4>
+          <p className="text-muted">
+            Data pasien akan ditampilkan di sini setelah ditemukan
+          </p>
+          <Button
+            variant="primary"
+            className="fw-bold"
+            onClick={handleTambahPasien}
+          >
+            Tambah Pasien 
+          </Button>
+        </Card>
+      </Container>
+    );
+  }
+
   return (
     <Container className="mt-4 my-4">
       <Card className="shadow p-3">
-        {/* Header */}
         <div className="bg-primary text-white p-3 rounded d-flex justify-content-between align-items-center">
           <h4 className="mb-0 text-start">Detail Pasien</h4>
           <Button
@@ -201,13 +235,13 @@ const DetailDataPasien = ({
             className="text-primary fw-bold"
             onClick={handleTambahPasien}
           >
-            +
+            Tambah Pasien +
           </Button>
         </div>
         
-        {/* Form */}
         <Form className="mt-3">
-          <Row className="mb-3">
+          {/* Form fields implementation */}
+           <Row className="mb-3">
             {/* Nama Lengkap */}
             <Col md={6}>
               <Form.Group>
@@ -639,17 +673,16 @@ const DetailDataPasien = ({
               </Form.Group>
             </Col>
           </Row>
-
-          {/* Tombol Batal & Simpan */}
+          
           <div className="d-flex justify-content-end gap-2 mt-3">
             <Button 
               variant="success" 
               onClick={onShowModal}
-              // disabled={loadingDokter || errorDokter || !selectedPatient}
+              disabled={loadingDokter || errorDokter}
             >
               <FaSave /> Daftar Rawat Jalan
             </Button>
-          </div> 
+          </div>
         </Form>
       </Card>
     </Container>
