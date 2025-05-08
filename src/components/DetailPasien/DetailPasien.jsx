@@ -50,17 +50,20 @@ const DetailDataPasien = ({
   });
 
   const getJenisKelaminText = (value) => {
-    switch (value) {
+    const val = parseInt(value);
+    switch (val) {
       case 0: return "Tidak diketahui";
       case 1: return "Laki-laki";
       case 2: return "Perempuan";
       case 3: return "Tidak dapat ditentukan";
-      default: return "Tidak valid";
+      default: return `Tidak valid (${value})`;
     }
   };
-
+  
+  // Contoh untuk agama
   const getAgama = (value) => {
-    switch (value) {
+    const val = parseInt(value);
+    switch (val) {
       case 0: return "Tidak diketahui";
       case 1: return "Islam";
       case 2: return "Kristen (Protestan)";
@@ -69,12 +72,13 @@ const DetailDataPasien = ({
       case 5: return "Budha";
       case 6: return "Konghucu";
       case 7: return "Penghayat";
-      default: return "Tidak valid";
+      default: return `Tidak valid (${value})`;
     }
   };
 
   const getPendidikan = (value) => {
-    switch (value) {
+    const val = parseInt(value);
+    switch (val) {
       case 0: return "Tidak sekolah";
       case 1: return "SD";
       case 2: return "SLTP sederajat";
@@ -89,7 +93,8 @@ const DetailDataPasien = ({
   };
 
   const getPerkerjaan = (value) => {
-    switch (value) {
+    const val = parseInt(value);
+    switch (val) {
       case 0: return "Tidak bekerja";
       case 1: return "PNS";
       case 2: return "TNI/POLRI";
@@ -100,7 +105,8 @@ const DetailDataPasien = ({
   };
 
   const getPernikahan = (value) => {
-    switch (value) {
+    const val = parseInt(value);
+    switch (val) {
       case 1: return "Belum Kawin";
       case 2: return "Kawin";
       case 3: return "Cerai Hidup";
