@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Container, Form, Row, Col, Button, Card, Alert } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { ethers } from "ethers";
+import { getContract } from "../../utils/outpatientContract";
 
 const DetailDataPasien = ({ 
   selectedPatient, 
@@ -230,6 +233,58 @@ const DetailDataPasien = ({
       </Container>
     );
   }
+
+  // Tambahkan fungsi handleSaveRawatJalan di komponen utama
+const handleSaveRawatJalan = async (dataRawatJalan) => {
+  try {
+    // 1. Siapkan data yang diperlukan
+    const { NIK, jadwalDokter } = dataRawatJalan;
+    
+    // 2. Dapatkan contract instance
+    const contract = await getContract();
+    
+    // 3. Buat hash MR (Medical Record) dari NIK
+    const mrHash = ethers.keccak256(ethers.toUtf8Bytes(NIK));
+    
+    // 4. Parse scheduleId dari jadwalDokter (contoh: "Senin 08:00 - 12:00" -> 1)
+    const scheduleId = convertJadwalToId(jadwalDokter);
+    
+    // 5. Panggil fungsi enqueue di smart contract
+    const tx = await contract.enqueue(mrHash, scheduleId);
+    
+    // 6. Tunggu konfirmasi transaksi
+    await tx.wait();
+    
+    // 7. Dapatkan nomor antrian
+    const queueNumber = await contract.getQueueNumber(mrHash);
+    
+    // 8. Tampilkan notifikasi sukses
+    Swal.fire({
+      icon: 'success',
+      title: 'Pendaftaran Berhasil',
+      html: `Nomor Antrian Anda: <b>${queueNumber.toString()}</b>`,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error menyimpan rawat jalan:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Mendaftar',
+      text: error.message || 'Terjadi kesalahan saat mendaftar rawat jalan',
+    });
+    return false;
+  }
+};
+
+// Fungsi helper untuk konversi jadwal ke ID
+const convertJadwalToId = (jadwal) => {
+  // Implementasi sesuai kebutuhan, contoh sederhana:
+  if (jadwal.includes("Senin")) return 1;
+  if (jadwal.includes("Selasa")) return 2;
+  // ... dan seterusnya
+  return 0;
+};
 
   return (
     <Container className="mt-4 my-4">

@@ -5,7 +5,10 @@ import SearchBar from "../components/Searchbar/Searchbar";
 import DetailDataPasien from "../components/DetailPasien/DetailPasien";
 import Breadcrumbs from "../components/Breadcumbs/Breadcumbs";
 import ModalRawatJalan from "../components/ModalRawatJalan/ModalRawatJalan";
-import { getContract } from "../utils/doctorContract";
+import { getContract as getDoctorContract } from "../utils/doctorContract";
+import { enqueuePatient, getQueueNumber } from "../utils/outpatientContract";
+import Swal from "sweetalert2";
+import { ethers } from 'ethers';
 
 const DetailPasien = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -24,7 +27,7 @@ const DetailPasien = () => {
     setErrorDokter(null);
     
     try {
-      const contract = await getContract();
+      const contract = await getDoctorContract();
       
       try {
         const doctorList = await contract.listOfDoctors();
@@ -40,7 +43,7 @@ const DetailPasien = () => {
         
         setDokter(formattedDoctors);
       } catch (listError) {
-        console.log("Menggunakan fallback doctorCount:", listError);
+        console.log("Using fallback doctorCount:", listError);
         
         const doctorCount = await contract.doctorCount();
         const doctors = [];
@@ -52,8 +55,8 @@ const DetailPasien = () => {
             namaDokter: doctor.name,
             nik: doctor.nik,
             nomorPraktek: doctor.strNumber,
-            spesialis: "Umum",
-            ruangPraktek: "Ruang Praktek 1"
+            spesialis: doctor.specialty || "Umum",
+            ruangPraktek: doctor.room || "Ruang Praktek 1"
           });
         }
         
@@ -61,7 +64,7 @@ const DetailPasien = () => {
       }
     } catch (err) {
       console.error("Error fetching doctors:", err);
-      setErrorDokter("Gagal mengambil data dokter dari blockchain. Pastikan wallet terhubung.");
+      setErrorDokter("Failed to fetch doctors. Please ensure your wallet is connected.");
     } finally {
       setLoadingDokter(false);
     }
@@ -84,9 +87,78 @@ const DetailPasien = () => {
     setSearchStatus(status);
   };
 
-  const handleSaveRawatJalan = (data) => {
-    console.log("Data Rawat Jalan Disimpan:", data);
-    setShowModal(false);
+  const handleSaveRawatJalan = async (data) => {
+    try {
+      Swal.fire({
+        title: 'Processing Registration',
+        html: 'Saving data to blockchain...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      // Create medical record hash from NIK
+      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(data.NIK));
+      
+      // Convert schedule text to ID (e.g., "Senin" -> 1)
+      const scheduleId = convertJadwalToId(data.jadwalDokter);
+      
+      // Save to blockchain
+      await enqueuePatient(mrHash, scheduleId);
+      
+      // Get queue number
+      const queueNumber = await getQueueNumber(mrHash);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Registration Successful!',
+        html: `
+          <div>
+            <p>Your outpatient registration has been saved to the blockchain</p>
+            <p><strong>Queue Number:</strong> ${queueNumber.toString()}</p>
+            <p><strong>Schedule:</strong> ${data.jadwalDokter}</p>
+            <p><strong>Doctor:</strong> ${data.namaDokter}</p>
+          </div>
+        `,
+        confirmButtonText: 'Close'
+      });
+
+      setShowModal(false);
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Registration Failed',
+        html: `
+          <div>
+            <p>Error during registration:</p>
+            <p><code>${error.message || 'Unknown error'}</code></p>
+          </div>
+        `
+      });
+      return false;
+    }
+  };
+
+  // Helper function to convert schedule text to ID
+  const convertJadwalToId = (jadwalText) => {
+    const dayMap = {
+      'senin': 1,
+      'selasa': 2,
+      'rabu': 3,
+      'kamis': 4,
+      'jumat': 5,
+      'sabtu': 6,
+      'minggu': 7
+    };
+
+    const lowerJadwal = jadwalText.toLowerCase();
+    for (const [day, id] of Object.entries(dayMap)) {
+      if (lowerJadwal.includes(day)) {
+        return id;
+      }
+    }
+    return 0;
   };
 
   return (
@@ -103,7 +175,7 @@ const DetailPasien = () => {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p>Mencari data pasien...</p>
+          <p>Searching patient data...</p>
         </div>
       )}
       
@@ -118,7 +190,7 @@ const DetailPasien = () => {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p>Memuat data dokter...</p>
+          <p>Loading doctor data...</p>
         </div>
       )}
       
@@ -129,7 +201,7 @@ const DetailPasien = () => {
             className="btn btn-sm btn-warning ms-3"
             onClick={fetchDoctorsFromBlockchain}
           >
-            Coba Lagi
+            Try Again
           </button>
         </div>
       )}
