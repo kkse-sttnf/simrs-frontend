@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react"; // Import useCallback
+import React, { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Row, Col, Spinner, Alert } from "react-bootstrap";
-import { getContract } from "../../utils/doctorContract";
+import { getContract as getOutpatientContract } from "../../utils/outpatientContract"; // Import untuk kontrak rawat jalan
+import { getContract as getDoctorContract } from "../../utils/doctorContract";   // Import untuk kontrak dokter
 import Swal from "sweetalert2";
+import { ethers } from "ethers";
 
 const ModalRawatJalan = ({
   show,
   handleClose,
   selectedPatient,
-  dokter = [],
-  onSave,
+  dokter = [], // Ini adalah prop 'dokter' yang berisi daftar semua dokter dari parent
+  onSave,     // Ini adalah prop 'handleSaveRawatJalan' dari parent
   loadingDokter,
   errorDokter
 }) => {
@@ -23,31 +25,28 @@ const ModalRawatJalan = ({
   const convertDayNumber = useCallback((dayNum) => {
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     return days[dayNum] || `Day-${dayNum}`;
-  }, []); // No dependencies, so it's created once
+  }, []);
 
   // Memoize fetchDoctorSchedules to prevent unnecessary re-creations
   const fetchDoctorSchedules = useCallback(async (doctorId) => {
     if (!doctorId) return;
-    
+
     setLoadingSchedules(true);
     setScheduleError(null);
-    setSelectedSchedule("");
+    setSelectedSchedule(""); // Clear selected schedule when doctor changes
 
     try {
-      const contract = await getContract(); // getContract is stable if it's outside the component or memoized
-      const schedules = await contract.getDoctorSchedules(doctorId);
-      
-      // Debug: Check the raw schedule data structure
-      console.log("Raw schedule data:", schedules);
+      // PENTING: Gunakan getDoctorContract untuk mengambil jadwal dokter
+      const doctorContract = await getDoctorContract();
+      const schedules = await doctorContract.getDoctorSchedules(doctorId);
 
       const formattedSchedules = schedules.map(schedule => {
- 
         const scheduleData = {
           id: schedule.id?.toString() || schedule[0]?.toString(),
-          day: schedule.day || schedule[2], // Corrected index for day
+          day: schedule.day || schedule[2],
           startTime: schedule.startTime || schedule.start || schedule[3],
-          endTime: schedule.endTime || schedule.end || schedule[4],     
-          room: schedule.room || schedule[5]                            
+          endTime: schedule.endTime || schedule.end || schedule[4],
+          room: schedule.room || schedule[5]
         };
 
         return {
@@ -62,11 +61,12 @@ const ModalRawatJalan = ({
       setDoctorSchedules(formattedSchedules);
     } catch (error) {
       console.error("Failed to load schedules:", error);
-      setScheduleError("Failed to load doctor schedules");
+      // Pesan error yang lebih informatif
+      setScheduleError("Gagal memuat jadwal dokter. Pastikan kontrak dokter terhubung dan fungsi 'getDoctorSchedules' tersedia di ABI-nya.");
     } finally {
       setLoadingSchedules(false);
     }
-  }, [convertDayNumber]); // Removed getContract from dependencies
+  }, [convertDayNumber]);
 
   // useEffect for fetching schedules when selectedDoctor changes
   useEffect(() => {
@@ -74,9 +74,9 @@ const ModalRawatJalan = ({
       fetchDoctorSchedules(selectedDoctor.id);
     } else {
       setDoctorSchedules([]);
-      setSelectedSchedule(""); // Clear selected schedule when doctor is unselected
+      setSelectedSchedule("");
     }
-  }, [selectedDoctor, fetchDoctorSchedules]); // Added fetchDoctorSchedules to the dependency array
+  }, [selectedDoctor, fetchDoctorSchedules]);
 
   // useEffect for resetting state when modal closes
   useEffect(() => {
@@ -84,12 +84,21 @@ const ModalRawatJalan = ({
       setSelectedDoctor(null);
       setSelectedSchedule("");
       setDoctorSchedules([]);
-      setScheduleError(null); // Reset schedule error on close
-      setIsSubmitting(false); // Reset submitting state on close
+      setScheduleError(null);
+      setIsSubmitting(false);
     }
   }, [show]);
 
   const handleSave = async () => {
+    if (!selectedPatient) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Pasien Belum Dipilih',
+        text: 'Harap cari dan pilih pasien terlebih dahulu.',
+      });
+      return;
+    }
+
     if (!selectedDoctor || !selectedSchedule) {
       Swal.fire({
         icon: 'warning',
@@ -107,35 +116,142 @@ const ModalRawatJalan = ({
       );
 
       if (!selectedScheduleData) {
-        throw new Error("Data jadwal tidak ditemukan");
+        throw new Error("Data jadwal tidak ditemukan dalam daftar yang dimuat.");
       }
 
-      const data = {
+      const dataToSave = {
         namaPasien: selectedPatient?.namaLengkap || "",
         NIK: selectedPatient?.nik || "",
         namaDokter: selectedDoctor.namaDokter,
         spesialis: selectedDoctor.spesialis,
         nomorPraktek: selectedDoctor.nomorPraktek,
         jadwalDokter: selectedSchedule,
-        ruangPraktek: selectedScheduleData.ruangPraktek || selectedDoctor.ruangPraktek, // Fallback to doctor's room if schedule doesn't have it
+        ruangPraktek: selectedScheduleData.ruangPraktek || selectedDoctor.ruangPraktek,
       };
 
-      const result = await onSave(data);
-      
-      if (result) {
-        handleClose(); // Tutup modal hanya jika berhasil
+      // Create medical record hash from NIK
+      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(dataToSave.NIK));
+
+      // Convert schedule text to ID (e.g., "Senin" -> 1)
+      const scheduleId = convertJadwalToId(dataToSave.jadwalDokter);
+
+      // PENTING: Gunakan getOutpatientContract untuk operasi antrian
+      const outpatientContract = await getOutpatientContract();
+
+      // Periksa apakah pasien sudah ada di antrian
+      let existingQueueNumber;
+      try {
+        existingQueueNumber = await outpatientContract.getQueueNumber(mrHash);
+      } catch (error) {
+        // Tangani error decoding atau data yang tidak valid dari kontrak (misal: 0x)
+        if (error.code === 'BAD_DATA' && error.value === '0x') {
+            console.warn(`getQueueNumber for ${mrHash} returned 0x. Interpreting as 0.`);
+            existingQueueNumber = ethers.toBigInt(0); // Mengembalikan BigInt 0 yang konsisten
+        } else {
+            throw error; // Lemparkan error lain
+        }
       }
+
+      if (existingQueueNumber.toString() !== "0") { // Check if not zero
+        const result = await Swal.fire({
+          title: 'Pasien Sudah Terdaftar',
+          html: `Pasien ini sudah terdaftar dengan nomor antrian: <b>${existingQueueNumber.toString()}</b>. <br> Apakah Anda ingin mendaftar ulang?`,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, Daftar Ulang',
+          cancelButtonText: 'Batal'
+        });
+
+        if (!result.isConfirmed) {
+          setIsSubmitting(false);
+          return false; // User cancelled re-registration
+        }
+      }
+
+      // Show loading for transaction
+      Swal.fire({
+        title: 'Mengirim Transaksi',
+        html: `Mendaftarkan pasien...<br>Hash MR: ${mrHash.slice(0, 10)}...`,
+        icon: 'info',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      // Enqueue patient
+      const tx = await outpatientContract.enqueue(mrHash, scheduleId);
+      const receipt = await tx.wait();
+
+      if (receipt.status !== 1) {
+        throw new Error("Transaksi pendaftaran rawat jalan gagal di blockchain.");
+      }
+
+      const queueNumber = await outpatientContract.getQueueNumber(mrHash);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Pendaftaran Berhasil!',
+        html: `
+          <div>
+            <p>Pendaftaran rawat jalan Anda telah disimpan di blockchain.</p>
+            <p><strong>Nomor Antrian:</strong> ${queueNumber.toString()}</p>
+            <p><strong>Jadwal:</strong> ${dataToSave.jadwalDokter}</p>
+            <p><strong>Dokter:</strong> ${dataToSave.namaDokter}</p>
+          </div>
+        `,
+        confirmButtonText: 'Oke'
+      });
+
+      handleClose(); // Close modal on success
+      return true;
+
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error during registration:", error);
+
+      let errorMessage = 'Terjadi kesalahan saat mendaftar rawat jalan.';
+      if (error.message.includes("Patient already in queue")) {
+        errorMessage = 'Pasien ini sudah terdaftar dalam antrian.';
+      } else if (error.code === 'ACTION_REJECTED') {
+        errorMessage = "Transaksi dibatalkan oleh pengguna.";
+      } else if (error.code === 'CALL_EXCEPTION') {
+        errorMessage = "Anda tidak memiliki izin untuk melakukan operasi ini atau ada masalah kontrak.";
+      } else if (error.reason) {
+        errorMessage = error.reason;
+      } else if (error.message.includes("execution reverted")) {
+        errorMessage = "Transaksi gagal dieksekusi di blockchain. Periksa log kontrak.";
+      }
+
       Swal.fire({
         icon: 'error',
-        title: 'Terjadi Kesalahan',
-        text: error.message || 'Gagal menyimpan data pendaftaran',
+        title: 'Gagal Mendaftar',
+        text: errorMessage,
       });
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Helper function to convert schedule text to ID
+  const convertJadwalToId = (jadwalText) => {
+    const dayMap = {
+      'senin': 1,
+      'selasa': 2,
+      'rabu': 3,
+      'kamis': 4,
+      'jumat': 5,
+      'sabtu': 6,
+      'minggu': 7
+    };
+
+    const lowerJadwal = jadwalText.toLowerCase();
+    for (const [day, id] of Object.entries(dayMap)) {
+      if (lowerJadwal.includes(day)) {
+        return id;
+      }
+    }
+    return 0; // Default ID if no match is found
+  };
+
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" backdrop="static">
@@ -145,7 +261,7 @@ const ModalRawatJalan = ({
       <Modal.Body>
         {errorDokter && <Alert variant="danger">{errorDokter}</Alert>}
         {scheduleError && <Alert variant="danger">{scheduleError}</Alert>}
-        
+
         <Form>
           <Row className="mb-3">
             <Col md={12}>
@@ -270,8 +386,8 @@ const ModalRawatJalan = ({
         <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           onClick={handleSave}
           disabled={isSubmitting || !selectedDoctor || !selectedSchedule}
         >

@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 
-const contractAddress = '0xAb21c2cE155D7090b3DB8eca6e629309b852b4C7';
+const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 const contractAbi = [
     'event PatientEnqueued(string mrHash, uint256 scheduleId, uint256 queueNumber)',
     'function enqueue(string mrHash, uint256 scheduleId)',

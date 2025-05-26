@@ -8,23 +8,23 @@ import Swal from "sweetalert2";
 
 // Mapping hari ke angka dan sebaliknya
 const dayMapping = {
-  0: "Senin",
-  1: "Selasa",
-  2: "Rabu",
-  3: "Kamis",
-  4: "Jumat",
-  5: "Sabtu",
-  6: "Minggu"
+  1: "Senin",
+  2: "Selasa",
+  3: "Rabu",
+  4: "Kamis",
+  5: "Jumat",
+  6: "Sabtu",
+  7: "Minggu"
 };
 
 const reverseDayMapping = {
-  "Senin": 0,
-  "Selasa": 1,
-  "Rabu": 2,
-  "Kamis": 3,
-  "Jumat": 4,
-  "Sabtu": 5,
-  "Minggu": 6
+  "Senin": 1,
+  "Selasa": 2,
+  "Rabu": 3,
+  "Kamis": 4,
+  "Jumat": 5,
+  "Sabtu": 6,
+  "Minggu": 7
 };
 
 const DetailDokter = () => {

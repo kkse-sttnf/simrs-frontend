@@ -3,20 +3,18 @@ import { Container, Form, Row, Col, Button, Card } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { ethers } from "ethers";
-import { getContract } from "../../utils/outpatientContract";
 
-const DetailDataPasien = ({ 
-  selectedPatient, 
-  dokter, 
-  loadingDokter, 
+
+const DetailDataPasien = ({
+  selectedPatient,
+  dokter,
+  loadingDokter,
   errorDokter,
   onShowModal,
   searchStatus
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    
     namaLengkap: "",
     nomorRekamMedis: "",
     nik: "",
@@ -76,7 +74,7 @@ const DetailDataPasien = ({
       default: return `Tidak valid (${value})`;
     }
   };
-  
+
   const getAgama = (value) => {
     const val = parseInt(value);
     switch (val) {
@@ -230,87 +228,12 @@ const DetailDataPasien = ({
             className="fw-bold"
             onClick={handleTambahPasien}
           >
-            Tambah Pasien 
+            Tambah Pasien
           </Button>
         </Card>
       </Container>
     );
   }
-
-  const handleSaveRawatJalan = async (dataRawatJalan) => {
-  try {
-    const { NIK, jadwalDokter } = dataRawatJalan;
-    const contract = await getContract();
-    const mrHash = ethers.keccak256(ethers.toUtf8Bytes(NIK));
-    const scheduleId = convertJadwalToId(jadwalDokter);
-
-    // Periksa apakah pasien sudah ada di antrian
-    const existingQueueNumber = await contract.getQueueNumber(mrHash);
-    if (existingQueueNumber > 0) {
-      // Jika sudah ada, tampilkan nomor antrian yang sudah ada
-      Swal.fire({
-        icon: 'info',
-        title: 'Pasien Sudah Terdaftar',
-        html: `Pasien ini sudah terdaftar dengan nomor antrian: <b>${existingQueueNumber.toString()}</b>`,
-        showCancelButton: true,
-        confirmButtonText: 'Daftar Ulang',
-        cancelButtonText: 'Batal'
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          // Jika user memilih daftar ulang
-          const tx = await contract.enqueue(mrHash, scheduleId);
-          await tx.wait();
-          const newQueueNumber = await contract.getQueueNumber(mrHash);
-          
-          Swal.fire({
-            icon: 'success',
-            title: 'Pendaftaran Ulang Berhasil',
-            html: `Nomor Antrian Baru: <b>${newQueueNumber.toString()}</b>`,
-          });
-        }
-      });
-      return false;
-    }
-
-    // Jika belum terdaftar, daftarkan sebagai baru
-    const tx = await contract.enqueue(mrHash, scheduleId);
-    await tx.wait();
-    const queueNumber = await contract.getQueueNumber(mrHash);
-    
-    Swal.fire({
-      icon: 'success',
-      title: 'Pendaftaran Berhasil',
-      html: `Nomor Antrian Anda: <b>${queueNumber.toString()}</b>`,
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Error menyimpan rawat jalan:', error);
-    
-    let errorMessage = 'Terjadi kesalahan saat mendaftar rawat jalan';
-    if (error.message.includes("Patient already in queue")) {
-      errorMessage = 'Pasien ini sudah terdaftar dalam antrian';
-    }
-    
-    Swal.fire({
-      icon: 'error',
-      title: 'Gagal Mendaftar',
-      text: errorMessage,
-    });
-    return false;
-  }
-};
-
-  const convertJadwalToId = (jadwal) => {
-    if (jadwal.includes("Senin")) return 1;
-    if (jadwal.includes("Selasa")) return 2;
-    if (jadwal.includes("Rabu")) return 3;
-    if (jadwal.includes("Kamis")) return 4;
-    if (jadwal.includes("Jumat")) return 5;
-    if (jadwal.includes("Sabtu")) return 6;
-    if (jadwal.includes("Minggu")) return 7;
-    return 0;
-  };
 
   return (
     <Container className="mt-4 my-4">
@@ -325,10 +248,10 @@ const DetailDataPasien = ({
             Tambah Pasien +
           </Button>
         </div>
-        
+
         <Form className="mt-3">
           {/* Form fields implementation */}
-           <Row className="mb-3">
+          <Row className="mb-3">
             {/* Nama Lengkap */}
             <Col md={6}>
               <Form.Group>
@@ -760,10 +683,10 @@ const DetailDataPasien = ({
               </Form.Group>
             </Col>
           </Row>
-          
+
           <div className="d-flex justify-content-end gap-2 mt-3">
-            <Button 
-              variant="success" 
+            <Button
+              variant="success"
               onClick={onShowModal}
               disabled={loadingDokter || errorDokter}
             >

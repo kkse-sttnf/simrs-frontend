@@ -31,48 +31,40 @@ const DetailPasien = () => {
       
       try {
         const doctorList = await contract.listOfDoctors();
-        console.log("Raw doctorList from contract.listOfDoctors():", doctorList); // Debugging
+        console.log("Raw doctorList from contract.listOfDoctors():", doctorList); 
         
         const formattedDoctors = doctorList.map(doctor => {
-          // Akses properti menggunakan indeks karena kontrak mengembalikan tuple (array-like object)
-          // doctor[0] = id (uint256)
-          // doctor[1] = name (string)
-          // doctor[2] = nik (string)
-          // doctor[3] = strNumber (string)
+
           return {
-            id: doctor[0]?.toString() || '', // Pastikan id diubah ke string
+            id: doctor[0]?.toString() || '', 
             namaDokter: doctor[1] || '',
             nik: doctor[2] || '',
             nomorPraktek: doctor[3] || '',
-            spesialis: "Umum", // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
-            ruangPraktek: "Ruang Praktek 1" // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+            spesialis: "Umum", 
+            ruangPraktek: "Ruang Praktek 1" 
           };
         });
         
         setDokter(formattedDoctors);
       } catch (listError) {
-        console.warn("Error using listOfDoctors, trying fallback with doctorCount:", listError); // Debugging
+        console.warn("Error using listOfDoctors, trying fallback with doctorCount:", listError); 
         
         const doctorCount = await contract.doctorCount();
         const doctors = [];
         
         for (let i = 0; i < doctorCount; i++) {
           const doctor = await contract.doctors(i);
-          console.log(`Raw doctor data for index ${i} from contract.doctors(${i}):`, doctor); // Debugging
+          console.log(`Raw doctor data for index ${i} from contract.doctors(${i}):`, doctor); 
           
-          // Akses properti menggunakan indeks karena kontrak mengembalikan tuple (array-like object)
-          // doctor[0] = id (uint256)
-          // doctor[1] = name (string)
-          // doctor[2] = nik (string)
-          // doctor[3] = strNumber (string)
-          if (doctor) { // Pastikan objek doctor tidak undefined
+         
+          if (doctor) { 
             doctors.push({
-              id: doctor[0]?.toString() || '', // Pastikan id diubah ke string
+              id: doctor[0]?.toString() || '',
               namaDokter: doctor[1] || '',
               nik: doctor[2] || '',
               nomorPraktek: doctor[3] || '',
-              spesialis: "Umum", // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
-              ruangPraktek: "Ruang Praktek 1" // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+              spesialis: "Umum", 
+              ruangPraktek: "Ruang Praktek 1" 
             });
           } else {
             console.warn(`Doctor data for index ${i} was undefined.`);
@@ -115,16 +107,16 @@ const DetailPasien = () => {
         didOpen: () => Swal.showLoading()
       });
 
-      // Create medical record hash from NIK
+      
       const mrHash = ethers.keccak256(ethers.toUtf8Bytes(data.NIK));
       
-      // Convert schedule text to ID (e.g., "Senin" -> 1)
+      
       const scheduleId = convertJadwalToId(data.jadwalDokter);
       
-      // Save to blockchain
+     
       await enqueuePatient(mrHash, scheduleId);
       
-      // Get queue number
+      
       const queueNumber = await getQueueNumber(mrHash);
 
       Swal.fire({
@@ -159,7 +151,7 @@ const DetailPasien = () => {
     }
   };
 
-  // Helper function to convert schedule text to ID
+  
   const convertJadwalToId = (jadwalText) => {
     const dayMap = {
       'senin': 1,
@@ -168,7 +160,7 @@ const DetailPasien = () => {
       'kamis': 4,
       'jumat': 5,
       'sabtu': 6,
-      'minggu': 7
+      'minggu': 7 
     };
 
     const lowerJadwal = jadwalText.toLowerCase();
