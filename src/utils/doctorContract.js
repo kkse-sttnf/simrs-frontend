@@ -1,23 +1,23 @@
 import { ethers } from 'ethers';
 
-const contractAddress = '0x12bfa29c82453f4ba290f090d1af8350b44f5cd0';
+const contractAddress = '0x347637C9B8b40661cc56Ef2615a569B19F23C6D0';
 const contractAbi = [
-    'event DoctorDeleted(string id)',
-    'event DoctorRegistered(uint256 id, string name, string nik, string strNumber)',
-    'event ScheduleDeleted(uint256 id)',
-    'event ScheduleRegistered(uint256 id, uint256 doctorId, uint8 day, string start, string end, string room)',
-    'function deleteDoctor(string id)',
-    'function deleteSchedule(uint256 id)',
-    'function doctorCount() view returns (uint256)',
-    'function doctors(uint256) view returns (uint256 id, string name, string nik, string strNumber)',
-    'function getDoctorSchedules(uint256 doctorId) view returns ((uint256 id, uint256 doctorId, uint8 day, string start, string end, string room)[])',
-    'function listOfDoctors() view returns ((uint256 id, string name, string nik, string strNumber)[])',
-    'function listOfSchedules() view returns ((uint256 id, uint256 doctorId, uint8 day, string start, string end, string room)[])',
-    'function registerDoctor(string name, string nik, string strNumber)',
-    'function registerSchedule(uint256 doctorId, uint8 day, string start, string end, string room)',
-    'function scheduleCount() view returns (uint256)',
-    'function schedules(uint256) view returns (uint256 id, uint256 doctorId, uint8 day, string start, string end, string room)'
-];
+  'event DoctorDeleted(uint256)',
+  'event DoctorRegistered(uint256,string,string,string)',
+  'event ScheduleDeleted(uint256)',
+  'event ScheduleRegistered(uint256,uint256,uint8,string,string,string)',
+  'function deleteDoctor(uint256)',
+  'function deleteSchedule(uint256)',
+  'function doctorCount() view returns (uint256)',
+  'function doctors(uint256) view returns (uint256,string,string,string)',
+  'function getDoctorSchedules(uint256) view returns ((uint256,uint256,uint8,string,string,string)[])',
+  'function listOfDoctors() view returns ((uint256,string,string,string)[])',
+  'function listOfSchedules() view returns ((uint256,uint256,uint8,string,string,string)[])',
+  'function registerDoctor(string,string,string)',
+  'function registerSchedule(uint256,uint8,string,string,string)',
+  'function scheduleCount() view returns (uint256)',
+  'function schedules(uint256) view returns (uint256,uint256,uint8,string,string,string)'
+]
 
 let contractInstance = null;
 

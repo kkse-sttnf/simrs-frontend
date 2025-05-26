@@ -31,33 +31,52 @@ const DetailPasien = () => {
       
       try {
         const doctorList = await contract.listOfDoctors();
+        console.log("Raw doctorList from contract.listOfDoctors():", doctorList); // Debugging
         
-        const formattedDoctors = doctorList.map(doctor => ({
-          id: doctor.id.toString(),
-          namaDokter: doctor.name,
-          nik: doctor.nik,
-          nomorPraktek: doctor.strNumber,
-          spesialis: doctor.specialty || "Umum",
-          ruangPraktek: doctor.room || "Ruang Praktek 1"
-        }));
+        const formattedDoctors = doctorList.map(doctor => {
+          // Akses properti menggunakan indeks karena kontrak mengembalikan tuple (array-like object)
+          // doctor[0] = id (uint256)
+          // doctor[1] = name (string)
+          // doctor[2] = nik (string)
+          // doctor[3] = strNumber (string)
+          return {
+            id: doctor[0]?.toString() || '', // Pastikan id diubah ke string
+            namaDokter: doctor[1] || '',
+            nik: doctor[2] || '',
+            nomorPraktek: doctor[3] || '',
+            spesialis: "Umum", // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+            ruangPraktek: "Ruang Praktek 1" // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+          };
+        });
         
         setDokter(formattedDoctors);
       } catch (listError) {
-        console.log("Using fallback doctorCount:", listError);
+        console.warn("Error using listOfDoctors, trying fallback with doctorCount:", listError); // Debugging
         
         const doctorCount = await contract.doctorCount();
         const doctors = [];
         
         for (let i = 0; i < doctorCount; i++) {
           const doctor = await contract.doctors(i);
-          doctors.push({
-            id: doctor.id.toString(),
-            namaDokter: doctor.name,
-            nik: doctor.nik,
-            nomorPraktek: doctor.strNumber,
-            spesialis: doctor.specialty || "Umum",
-            ruangPraktek: doctor.room || "Ruang Praktek 1"
-          });
+          console.log(`Raw doctor data for index ${i} from contract.doctors(${i}):`, doctor); // Debugging
+          
+          // Akses properti menggunakan indeks karena kontrak mengembalikan tuple (array-like object)
+          // doctor[0] = id (uint256)
+          // doctor[1] = name (string)
+          // doctor[2] = nik (string)
+          // doctor[3] = strNumber (string)
+          if (doctor) { // Pastikan objek doctor tidak undefined
+            doctors.push({
+              id: doctor[0]?.toString() || '', // Pastikan id diubah ke string
+              namaDokter: doctor[1] || '',
+              nik: doctor[2] || '',
+              nomorPraktek: doctor[3] || '',
+              spesialis: "Umum", // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+              ruangPraktek: "Ruang Praktek 1" // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+            });
+          } else {
+            console.warn(`Doctor data for index ${i} was undefined.`);
+          }
         }
         
         setDokter(doctors);

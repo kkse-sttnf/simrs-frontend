@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Container, Card, Form, Row, Col, Button, Table, Spinner, Modal } from "react-bootstrap";
 import { FaArrowLeft, FaPlus, FaTrash } from "react-icons/fa";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { getContract} from "../../utils/doctorContract";
+import { getContract} from "../../utils/doctorContract"; // Pastikan path ini benar
 
 import Swal from "sweetalert2";
 
@@ -28,7 +28,7 @@ const reverseDayMapping = {
 };
 
 const DetailDokter = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // id dari URL, biasanya string
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -37,7 +37,7 @@ const DetailDokter = () => {
   const [jadwalPraktek, setJadwalPraktek] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [processing, setProcessing] = useState(false);
+  const [processing, setProcessing] = useState(false); // Untuk indikator loading saat transaksi
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,60 +52,73 @@ const DetailDokter = () => {
     ruangan: ""
   });
 
-  // Load initial data
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Load doctor data
-        const contract = await getContract();
-        const doctorData = await contract.doctors(id);
-        
-        setDokter({
-          id,
-          namaDokter: doctorData.name,
-          nik: doctorData.nik,
-          strNumber: doctorData.strNumber,
-          spesialisasi: doctorData.specialization
-        });
+  // Fungsi untuk memuat jadwal praktek
+  const loadSchedules = async (doctorId) => {
+    try {
+      const contract = await getContract();
+      // getDoctorSchedules mengembalikan array dari tuple: (uint256,uint256,uint8,string,string,string)
+      // schedule[0] = scheduleId, schedule[1] = doctorId, schedule[2] = day, schedule[3] = start, schedule[4] = end, schedule[5] = room
+      const schedules = await contract.getDoctorSchedules(doctorId);
+      console.log("Data jadwal mentah dari getDoctorSchedules:", schedules); // Debugging
 
-        // Load schedules
-        await loadSchedules(id);
+      setJadwalPraktek(schedules.map(schedule => ({
+        id: schedule[0]?.toString() || '',   // schedule[0] adalah id jadwal
+        hari: dayMapping[schedule[2]] || `Hari ${schedule[2]}`, // schedule[2] adalah day number
+        dayNumber: schedule[2], // Simpan dayNumber jika diperlukan
+        waktuMulai: schedule[3] || '',      // schedule[3] adalah waktu mulai
+        waktuSelesai: schedule[4] || '',    // schedule[4] adalah waktu selesai
+        ruangan: schedule[5] || ''          // schedule[5] adalah ruangan
+      })));
+    } catch (error) {
+      console.error("Error loading schedules:", error);
+      setJadwalPraktek([]); // Set ke array kosong jika ada error
+      // Anda bisa menambahkan setError di sini jika ingin menampilkan pesan error jadwal
+    }
+  };
+
+  // Load initial data (dokter dan jadwal)
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const contract = await getContract();
+        // doctors(uint256) mengembalikan tuple: (uint256,string,string,string)
+        // doctorData[0] = id, doctorData[1] = name, doctorData[2] = nik, doctorData[3] = strNumber
+        const doctorData = await contract.doctors(id);
+        console.log("Data dokter mentah dari contract.doctors(id):", doctorData); // Debugging
+        
+        // Pastikan doctorData valid sebelum mengakses properti
+        if (doctorData && doctorData[0] !== undefined) {
+          setDokter({
+            id: doctorData[0]?.toString() || id, // Gunakan id dari URL jika doctorData[0] undefined
+            namaDokter: doctorData[1] || '',
+            nik: doctorData[2] || '',
+            strNumber: doctorData[3] || '',
+            spesialisasi: "-" // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+          });
+          await loadSchedules(id);
+        } else {
+          setError("Data dokter tidak ditemukan atau tidak lengkap.");
+        }
       } catch (err) {
-        console.error("Error loading data:", err);
-        setError(err.message);
+        console.error("Error loading initial data:", err);
+        setError(`Gagal memuat data: ${err.message || "Terjadi kesalahan."}`);
       } finally {
         setLoading(false);
       }
     };
 
+    // Prioritaskan data dari location.state jika ada (dari navigasi sebelumnya)
     if (location.state?.dokter) {
       setDokter(location.state.dokter);
       loadSchedules(location.state.dokter.id);
       setLoading(false);
     } else {
-      loadData();
+      // Jika tidak ada data di location.state, ambil dari blockchain
+      loadInitialData();
     }
-  }, [id, location]);
-
-  // Load schedules function
-  const loadSchedules = async (doctorId) => {
-    try {
-      const contract = await getContract();
-      const schedules = await contract.getDoctorSchedules(doctorId);
-      
-      setJadwalPraktek(schedules.map(schedule => ({
-        id: schedule.id.toString(),
-        hari: dayMapping[schedule.day] || `Hari ${schedule.day}`,
-        dayNumber: schedule.day,
-        waktuMulai: schedule.start,
-        waktuSelesai: schedule.end,
-        ruangan: schedule.room
-      })));
-    } catch (error) {
-      console.error("Error loading schedules:", error);
-      setJadwalPraktek([]);
-    }
-  };
+  }, [id, location]); // Dependensi: id dari URL dan location (untuk location.state)
 
   // Navigation handlers
   const handleKembali = () => navigate("/DataDokter");
@@ -146,7 +159,7 @@ const DetailDokter = () => {
       
       // Send transaction
       const tx = await contract.registerSchedule(
-        id,
+        id, // doctorId (dari useParams)
         dayNumber,
         newSchedule.waktuMulai,
         newSchedule.waktuSelesai,
@@ -157,7 +170,9 @@ const DetailDokter = () => {
       await Swal.fire({
         title: "Transaksi Dikirim",
         html: `Menunggu konfirmasi...<br>TX Hash: ${tx.hash.slice(0, 10)}...`,
-        icon: "info"
+        icon: "info",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
       });
       
       // Wait for confirmation
@@ -177,11 +192,14 @@ const DetailDokter = () => {
         errorMsg = "Transaksi dibatalkan oleh pengguna";
       } else if (error.code === 'CALL_EXCEPTION') {
         errorMsg = "Anda tidak memiliki izin untuk menambahkan jadwal";
+      } else if (error.reason) { // Ethers.js specific error reason
+        errorMsg = error.reason;
       }
       
       Swal.fire("Error", `Gagal menambahkan jadwal: ${errorMsg}`, "error");
     } finally {
       setProcessing(false);
+      Swal.close(); // Tutup loading SweetAlert
     }
   };
 
@@ -204,7 +222,9 @@ const DetailDokter = () => {
       await Swal.fire({
         title: "Transaksi Dikirim",
         html: `Menghapus jadwal...<br>TX Hash: ${tx.hash.slice(0, 10)}...`,
-        icon: "info"
+        icon: "info",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
       });
       
       // Wait for confirmation
@@ -223,12 +243,15 @@ const DetailDokter = () => {
         errorMsg = "Transaksi dibatalkan oleh pengguna";
       } else if (error.code === 'CALL_EXCEPTION') {
         errorMsg = "Anda tidak memiliki izin untuk menghapus jadwal";
+      } else if (error.reason) { // Ethers.js specific error reason
+        errorMsg = error.reason;
       }
       
       Swal.fire("Error", `Gagal menghapus jadwal: ${errorMsg}`, "error");
     } finally {
       setProcessing(false);
       setShowDeleteModal(false);
+      Swal.close(); // Tutup loading SweetAlert
     }
   };
 
@@ -436,7 +459,12 @@ const DetailDokter = () => {
             onClick={handleSubmitSchedule}
             disabled={processing}
           >
-            {processing ? 'Menyimpan...' : 'Simpan'}
+            {processing ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                <span className="ms-2">Menyimpan...</span>
+              </>
+            ) : 'Simpan'}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -467,7 +495,12 @@ const DetailDokter = () => {
             onClick={handleConfirmDelete}
             disabled={processing}
           >
-            {processing ? 'Menghapus...' : 'Ya, Hapus'}
+            {processing ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                <span className="ms-2">Menghapus...</span>
+              </>
+            ) : 'Ya, Hapus'}
           </Button>
         </Modal.Footer>
       </Modal>

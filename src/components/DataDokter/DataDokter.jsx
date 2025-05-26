@@ -88,26 +88,32 @@ const ListDokter = () => {
       try {
         // Try using listOfDoctors first
         const doctorList = await contract.listOfDoctors();
+        console.log("Data dokter mentah dari listOfDoctors:", doctorList); // Debugging
         doctors = doctorList.map(doctor => ({
-          id: doctor.id.toString(),
-          namaDokter: doctor.name,
-          nik: doctor.nik,
-          strNumber: doctor.strNumber,
-          spesialisasi: "-" // Not available in ABI
+          id: doctor[0]?.toString() || '', // doctor[0] adalah id (uint256)
+          namaDokter: doctor[1] || '',     // doctor[1] adalah name (string)
+          nik: doctor[2] || '',            // doctor[2] adalah nik (string)
+          strNumber: doctor[3] || '',      // doctor[3] adalah strNumber (string)
+          spesialisasi: "-" // Tidak tersedia di ABI kontrak
         }));
       } catch (error) {
-        console.log("Falling back to doctorCount method:", error);
+        console.log("Gagal menggunakan listOfDoctors, mencoba doctorCount:", error);
         // Fallback to doctorCount if listOfDoctors fails
         const doctorCount = await contract.doctorCount();
         for (let i = 0; i < doctorCount; i++) {
           const doctor = await contract.doctors(i);
-          doctors.push({
-            id: doctor.id.toString(),
-            namaDokter: doctor.name,
-            nik: doctor.nik,
-            strNumber: doctor.strNumber,
-            spesialisasi: "-" // Not available in ABI
-          });
+          console.log(`Data dokter mentah dari doctors(${i}):`, doctor); // Debugging
+          if (doctor) {
+            doctors.push({
+              id: doctor[0]?.toString() || '', // doctor[0] adalah id (uint256)
+              namaDokter: doctor[1] || '',     // doctor[1] adalah name (string)
+              nik: doctor[2] || '',            // doctor[2] adalah nik (string)
+              strNumber: doctor[3] || '',      // doctor[3] adalah strNumber (string)
+              spesialisasi: "-" // Tidak tersedia di ABI kontrak
+            });
+          } else {
+            console.warn(`Data dokter untuk indeks ${i} tidak ditemukan.`);
+          }
         }
       }
 
@@ -185,6 +191,7 @@ const ListDokter = () => {
       // Kirim transaksi penghapusan
       const tx = await contract.deleteDoctor(state.dokterToDelete.id);
       
+
       updateState({
         success: `Transaksi dikirim. Menunggu konfirmasi... (Hash: ${tx.hash.slice(0, 8)}...)`
       });
@@ -279,7 +286,7 @@ const ListDokter = () => {
           console.log(`Dokter dengan ID ${id} dihapus`);
           // Update state jika ada perubahan dari blockchain
           updateState(prev => ({
-            listDokter: prev.listDokter.filter(d => d.id !== id)
+            listDokter: prev.listDokter.filter(d => d.id?.toString() !== id?.toString()) // Pastikan membandingkan string
           }));
         });
       } catch (err) {

@@ -16,6 +16,7 @@ const DetailDataPasien = ({
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    
     namaLengkap: "",
     nomorRekamMedis: "",
     nik: "",
@@ -237,32 +238,68 @@ const DetailDataPasien = ({
   }
 
   const handleSaveRawatJalan = async (dataRawatJalan) => {
-    try {
-      const { NIK, jadwalDokter } = dataRawatJalan;
-      const contract = await getContract();
-      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(NIK));
-      const scheduleId = convertJadwalToId(jadwalDokter);
-      const tx = await contract.enqueue(mrHash, scheduleId);
-      await tx.wait();
-      const queueNumber = await contract.getQueueNumber(mrHash);
-      
+  try {
+    const { NIK, jadwalDokter } = dataRawatJalan;
+    const contract = await getContract();
+    const mrHash = ethers.keccak256(ethers.toUtf8Bytes(NIK));
+    const scheduleId = convertJadwalToId(jadwalDokter);
+
+    // Periksa apakah pasien sudah ada di antrian
+    const existingQueueNumber = await contract.getQueueNumber(mrHash);
+    if (existingQueueNumber > 0) {
+      // Jika sudah ada, tampilkan nomor antrian yang sudah ada
       Swal.fire({
-        icon: 'success',
-        title: 'Pendaftaran Berhasil',
-        html: `Nomor Antrian Anda: <b>${queueNumber.toString()}</b>`,
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error menyimpan rawat jalan:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Mendaftar',
-        text: error.message || 'Terjadi kesalahan saat mendaftar rawat jalan',
+        icon: 'info',
+        title: 'Pasien Sudah Terdaftar',
+        html: `Pasien ini sudah terdaftar dengan nomor antrian: <b>${existingQueueNumber.toString()}</b>`,
+        showCancelButton: true,
+        confirmButtonText: 'Daftar Ulang',
+        cancelButtonText: 'Batal'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          // Jika user memilih daftar ulang
+          const tx = await contract.enqueue(mrHash, scheduleId);
+          await tx.wait();
+          const newQueueNumber = await contract.getQueueNumber(mrHash);
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Pendaftaran Ulang Berhasil',
+            html: `Nomor Antrian Baru: <b>${newQueueNumber.toString()}</b>`,
+          });
+        }
       });
       return false;
     }
-  };
+
+    // Jika belum terdaftar, daftarkan sebagai baru
+    const tx = await contract.enqueue(mrHash, scheduleId);
+    await tx.wait();
+    const queueNumber = await contract.getQueueNumber(mrHash);
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Pendaftaran Berhasil',
+      html: `Nomor Antrian Anda: <b>${queueNumber.toString()}</b>`,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error menyimpan rawat jalan:', error);
+    
+    let errorMessage = 'Terjadi kesalahan saat mendaftar rawat jalan';
+    if (error.message.includes("Patient already in queue")) {
+      errorMessage = 'Pasien ini sudah terdaftar dalam antrian';
+    }
+    
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Mendaftar',
+      text: errorMessage,
+    });
+    return false;
+  }
+};
 
   const convertJadwalToId = (jadwal) => {
     if (jadwal.includes("Senin")) return 1;
