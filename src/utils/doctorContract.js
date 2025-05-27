@@ -21,7 +21,7 @@ const contractAbi = [
 
 let contractInstance = null;
 
-export const getContract = async () => {
+export const getContract = async () => {    
     if (!window.ethereum) {
         throw new Error('Aplikasi memerlukan MetaMask. Pastikan Anda sudah login.');
     }

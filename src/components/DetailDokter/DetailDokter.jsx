@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Container, Card, Form, Row, Col, Button, Table, Spinner, Modal } from "react-bootstrap";
 import { FaArrowLeft, FaPlus, FaTrash } from "react-icons/fa";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { getContract} from "../../utils/doctorContract"; // Pastikan path ini benar
-
+import { getContract } from "../../utils/doctorContract";
 import Swal from "sweetalert2";
 
-// Mapping hari ke angka dan sebaliknya
+// Day mappings
 const dayMapping = {
   1: "Senin",
   2: "Selasa",
@@ -28,7 +27,7 @@ const reverseDayMapping = {
 };
 
 const DetailDokter = () => {
-  const { id } = useParams(); // id dari URL, biasanya string
+  const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -37,7 +36,7 @@ const DetailDokter = () => {
   const [jadwalPraktek, setJadwalPraktek] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [processing, setProcessing] = useState(false); // Untuk indikator loading saat transaksi
+  const [processing, setProcessing] = useState(false);
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,50 +51,40 @@ const DetailDokter = () => {
     ruangan: ""
   });
 
-  // Fungsi untuk memuat jadwal praktek
   const loadSchedules = async (doctorId) => {
     try {
       const contract = await getContract();
-      // getDoctorSchedules mengembalikan array dari tuple: (uint256,uint256,uint8,string,string,string)
-      // schedule[0] = scheduleId, schedule[1] = doctorId, schedule[2] = day, schedule[3] = start, schedule[4] = end, schedule[5] = room
       const schedules = await contract.getDoctorSchedules(doctorId);
-      console.log("Data jadwal mentah dari getDoctorSchedules:", schedules); // Debugging
-
+      
       setJadwalPraktek(schedules.map(schedule => ({
-        id: schedule[0]?.toString() || '',   // schedule[0] adalah id jadwal
-        hari: dayMapping[schedule[2]] || `Hari ${schedule[2]}`, // schedule[2] adalah day number
-        dayNumber: schedule[2], // Simpan dayNumber jika diperlukan
-        waktuMulai: schedule[3] || '',      // schedule[3] adalah waktu mulai
-        waktuSelesai: schedule[4] || '',    // schedule[4] adalah waktu selesai
-        ruangan: schedule[5] || ''          // schedule[5] adalah ruangan
+        id: schedule[0]?.toString() || '',
+        hari: dayMapping[schedule[2]] || `Hari ${schedule[2]}`,
+        dayNumber: schedule[2],
+        waktuMulai: schedule[3] || '',
+        waktuSelesai: schedule[4] || '',
+        ruangan: schedule[5] || ''
       })));
     } catch (error) {
       console.error("Error loading schedules:", error);
-      setJadwalPraktek([]); // Set ke array kosong jika ada error
-      // Anda bisa menambahkan setError di sini jika ingin menampilkan pesan error jadwal
+      setJadwalPraktek([]);
     }
   };
 
-  // Load initial data (dokter dan jadwal)
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
       setError(null);
       try {
         const contract = await getContract();
-        // doctors(uint256) mengembalikan tuple: (uint256,string,string,string)
-        // doctorData[0] = id, doctorData[1] = name, doctorData[2] = nik, doctorData[3] = strNumber
         const doctorData = await contract.doctors(id);
-        console.log("Data dokter mentah dari contract.doctors(id):", doctorData); // Debugging
         
-        // Pastikan doctorData valid sebelum mengakses properti
         if (doctorData && doctorData[0] !== undefined) {
           setDokter({
-            id: doctorData[0]?.toString() || id, // Gunakan id dari URL jika doctorData[0] undefined
+            id: doctorData[0]?.toString() || id,
             namaDokter: doctorData[1] || '',
             nik: doctorData[2] || '',
             strNumber: doctorData[3] || '',
-            spesialisasi: "-" // Properti ini tidak ada di ABI kontrak, jadi gunakan nilai default
+            spesialisasi: "-"
           });
           await loadSchedules(id);
         } else {
@@ -109,21 +98,17 @@ const DetailDokter = () => {
       }
     };
 
-    // Prioritaskan data dari location.state jika ada (dari navigasi sebelumnya)
     if (location.state?.dokter) {
       setDokter(location.state.dokter);
       loadSchedules(location.state.dokter.id);
       setLoading(false);
     } else {
-      // Jika tidak ada data di location.state, ambil dari blockchain
       loadInitialData();
     }
-  }, [id, location]); // Dependensi: id dari URL dan location (untuk location.state)
+  }, [id, location]);
 
-  // Navigation handlers
   const handleKembali = () => navigate("/DataDokter");
 
-  // Schedule form handlers
   const handleAddSchedule = () => setShowAddModal(true);
   const handleCloseAddModal = () => {
     setShowAddModal(false);
@@ -143,9 +128,7 @@ const DetailDokter = () => {
     }));
   };
 
-  // Add new schedule
   const handleSubmitSchedule = async () => {
-    // Validation
     if (!newSchedule.hari || !newSchedule.waktuMulai || !newSchedule.waktuSelesai || !newSchedule.ruangan) {
       Swal.fire("Error", "Harap lengkapi semua field jadwal praktek", "error");
       return;
@@ -153,36 +136,43 @@ const DetailDokter = () => {
 
     setProcessing(true);
     try {
-      // Get contract with signer
       const contract = await getContract();
       const dayNumber = reverseDayMapping[newSchedule.hari];
       
-      // Send transaction
       const tx = await contract.registerSchedule(
-        id, // doctorId (dari useParams)
+        id,
         dayNumber,
         newSchedule.waktuMulai,
         newSchedule.waktuSelesai,
         newSchedule.ruangan
       );
       
-      // Show transaction hash
-      await Swal.fire({
+      // Show loading state without blocking
+      const swalInstance = Swal.fire({
         title: "Transaksi Dikirim",
         html: `Menunggu konfirmasi...<br>TX Hash: ${tx.hash.slice(0, 10)}...`,
         icon: "info",
         allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
       });
-      
-      // Wait for confirmation
+
       await tx.wait();
-      
-      // Refresh data
       await loadSchedules(id);
       
-      // Success notification
-      Swal.fire("Sukses", "Jadwal praktek berhasil ditambahkan", "success");
+      // Close the loading alert first
+      await swalInstance.close();
+      
+      // Then show success alert
+      await Swal.fire({
+        title: "Sukses",
+        text: "Jadwal praktek berhasil ditambahkan",
+        icon: "success",
+        confirmButtonText: "OK"
+      });
+      
       handleCloseAddModal();
     } catch (error) {
       console.error("Error adding schedule:", error);
@@ -192,18 +182,16 @@ const DetailDokter = () => {
         errorMsg = "Transaksi dibatalkan oleh pengguna";
       } else if (error.code === 'CALL_EXCEPTION') {
         errorMsg = "Anda tidak memiliki izin untuk menambahkan jadwal";
-      } else if (error.reason) { // Ethers.js specific error reason
+      } else if (error.reason) {
         errorMsg = error.reason;
       }
       
       Swal.fire("Error", `Gagal menambahkan jadwal: ${errorMsg}`, "error");
     } finally {
       setProcessing(false);
-      Swal.close(); // Tutup loading SweetAlert
     }
   };
 
-  // Delete schedule handlers
   const handleDeleteSchedule = (schedule) => {
     setSelectedSchedule(schedule);
     setShowDeleteModal(true);
@@ -212,29 +200,33 @@ const DetailDokter = () => {
   const handleConfirmDelete = async () => {
     setProcessing(true);
     try {
-      // Get contract with signer
       const contract = await getContract();
-      
-      // Send transaction
       const tx = await contract.deleteSchedule(selectedSchedule.id);
       
-      // Show transaction hash
-      await Swal.fire({
+      const swalInstance = Swal.fire({
         title: "Transaksi Dikirim",
         html: `Menghapus jadwal...<br>TX Hash: ${tx.hash.slice(0, 10)}...`,
         icon: "info",
         allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
       });
-      
-      // Wait for confirmation
+
       await tx.wait();
-      
-      // Refresh data
       await loadSchedules(id);
       
-      // Success notification
-      Swal.fire("Sukses", "Jadwal praktek berhasil dihapus", "success");
+      // Close loading first
+      await swalInstance.close();
+      
+      // Then show success
+      await Swal.fire({
+        title: "Sukses",
+        text: "Jadwal praktek berhasil dihapus",
+        icon: "success",
+        confirmButtonText: "OK"
+      });
     } catch (error) {
       console.error("Error deleting schedule:", error);
       
@@ -243,7 +235,7 @@ const DetailDokter = () => {
         errorMsg = "Transaksi dibatalkan oleh pengguna";
       } else if (error.code === 'CALL_EXCEPTION') {
         errorMsg = "Anda tidak memiliki izin untuk menghapus jadwal";
-      } else if (error.reason) { // Ethers.js specific error reason
+      } else if (error.reason) {
         errorMsg = error.reason;
       }
       
@@ -251,11 +243,9 @@ const DetailDokter = () => {
     } finally {
       setProcessing(false);
       setShowDeleteModal(false);
-      Swal.close(); // Tutup loading SweetAlert
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <Container className="my-4 text-center">
@@ -265,7 +255,6 @@ const DetailDokter = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <Container className="my-4">
@@ -281,7 +270,6 @@ const DetailDokter = () => {
     );
   }
 
-  // No doctor found
   if (!dokter) {
     return (
       <Container className="my-4">
@@ -297,15 +285,12 @@ const DetailDokter = () => {
     );
   }
 
-  // Main render
   return (
     <Container className="my-4">
-      {/* Back button */}
       <Button variant="outline-primary" onClick={handleKembali} className="mb-3">
         <FaArrowLeft className="me-2" /> Kembali
       </Button>
 
-      {/* Doctor info card */}
       <Card className="shadow mb-4">
         <Card.Header className="bg-primary text-white">
           <h4 className="mb-0">Detail Dokter</h4>
@@ -345,7 +330,6 @@ const DetailDokter = () => {
             </Col>
           </Row>
 
-          {/* Schedule section */}
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="mb-0">Jadwal Praktek</h5>
             <Button variant="success" size="sm" onClick={handleAddSchedule}>
@@ -377,6 +361,7 @@ const DetailDokter = () => {
                         size="sm"
                         onClick={() => handleDeleteSchedule(jadwal)}
                         disabled={processing}
+                        aria-label={`Hapus jadwal ${jadwal.hari}`}
                       >
                         <FaTrash />
                       </Button>
@@ -394,9 +379,14 @@ const DetailDokter = () => {
       </Card>
 
       {/* Add Schedule Modal */}
-      <Modal show={showAddModal} onHide={handleCloseAddModal}>
+      <Modal 
+        show={showAddModal} 
+        onHide={handleCloseAddModal}
+        aria-labelledby="add-schedule-modal"
+        aria-modal="true"
+      >
         <Modal.Header closeButton>
-          <Modal.Title>Tambah Jadwal Praktek</Modal.Title>
+          <Modal.Title id="add-schedule-modal">Tambah Jadwal Praktek</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
@@ -407,6 +397,7 @@ const DetailDokter = () => {
                 value={newSchedule.hari}
                 onChange={handleScheduleChange}
                 required
+                aria-label="Pilih hari"
               >
                 <option value="">Pilih Hari</option>
                 {Object.keys(reverseDayMapping).map(day => (
@@ -423,6 +414,7 @@ const DetailDokter = () => {
                 value={newSchedule.waktuMulai}
                 onChange={handleScheduleChange}
                 required
+                aria-label="Waktu mulai praktek"
               />
             </Form.Group>
             
@@ -434,6 +426,7 @@ const DetailDokter = () => {
                 value={newSchedule.waktuSelesai}
                 onChange={handleScheduleChange}
                 required
+                aria-label="Waktu selesai praktek"
               />
             </Form.Group>
             
@@ -446,6 +439,7 @@ const DetailDokter = () => {
                 onChange={handleScheduleChange}
                 placeholder="Masukkan ruangan praktek"
                 required
+                aria-label="Ruangan praktek"
               />
             </Form.Group>
           </Form>
@@ -461,7 +455,7 @@ const DetailDokter = () => {
           >
             {processing ? (
               <>
-                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                <Spinner as="span" animation="border" size="sm" role="status" />
                 <span className="ms-2">Menyimpan...</span>
               </>
             ) : 'Simpan'}
@@ -470,9 +464,14 @@ const DetailDokter = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+      <Modal 
+        show={showDeleteModal} 
+        onHide={() => setShowDeleteModal(false)}
+        aria-labelledby="delete-schedule-modal"
+        aria-modal="true"
+      >
         <Modal.Header closeButton>
-          <Modal.Title>Konfirmasi Hapus Jadwal</Modal.Title>
+          <Modal.Title id="delete-schedule-modal">Konfirmasi Hapus Jadwal</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           Apakah Anda yakin ingin menghapus jadwal praktek ini?
@@ -497,7 +496,7 @@ const DetailDokter = () => {
           >
             {processing ? (
               <>
-                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                <Spinner as="span" animation="border" size="sm" role="status" />
                 <span className="ms-2">Menghapus...</span>
               </>
             ) : 'Ya, Hapus'}
