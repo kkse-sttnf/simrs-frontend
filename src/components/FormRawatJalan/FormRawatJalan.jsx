@@ -1,101 +1,151 @@
-import React from "react";
-import { Container, Row, Col, Card, Form } from "react-bootstrap";
+import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from "react-bootstrap";
+import { getContract } from "../../utils/outpatientContract";
+import Swal from "sweetalert2";
+import { useState, useEffect } from "react";
 
 const FormRawatJalan = ({ selectedPasien }) => {
+  const [queueInfo, setQueueInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [dequeueLoading, setDequeueLoading] = useState(false);
+
+  useEffect(() => {
+    const loadQueueData = async () => {
+      if (!selectedPasien?.NIK) {
+        setQueueInfo(null);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // For real-time validation, we could call getQueueInfo again
+        // But here we use the data passed from Search component
+        setQueueInfo({
+          mrHash: selectedPasien.mrHash,
+          queueNumber: selectedPasien.queueNumber,
+          scheduleId: selectedPasien.scheduleId
+        });
+      } catch (error) {
+        console.error("Error loading queue:", error);
+        Swal.fire("Error", "Gagal memuat detail antrian", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQueueData();
+  }, [selectedPasien]);
+
+  const handleDequeue = async () => {
+    const confirmation = await Swal.fire({
+      title: "Konfirmasi",
+      text: `Yakin ingin menghapus antrian pasien ${selectedPasien.NIK}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal"
+    });
+
+    if (!confirmation.isConfirmed) return;
+
+    setDequeueLoading(true);
+    try {
+      const contract = await getContract();
+      const tx = await contract.dequeue(selectedPasien.NIK);
+      await tx.wait();
+      
+      Swal.fire("Berhasil!", "Pasien telah dihapus dari antrian", "success");
+      setQueueInfo(null); // Clear the form
+    } catch (error) {
+      console.error("Dequeue error:", error);
+      Swal.fire("Gagal", error.reason || "Gagal menghapus antrian", "error");
+    } finally {
+      setDequeueLoading(false);
+    }
+  };
+
   return (
-    <Container className="mt-4 mb-5">
-      <Card className="shadow">
-        <Card.Header className="bg-primary text-white">
-          <h4 className="mb-0">Form Rawat Jalan</h4>
+    <Container className="mb-5">
+      <Card className="shadow-sm border-primary">
+        <Card.Header className="bg-primary text-white d-flex justify-content-between">
+          <h5 className="mb-0">Detail Antrian</h5>
+          {queueInfo && (
+            <Badge bg="light" text="dark" pill>
+              Antrian #{queueInfo.queueNumber}
+            </Badge>
+          )}
         </Card.Header>
+        
         <Card.Body>
-          <Form>
-            {/* Bagian Nama Pasien */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Nama Pasien</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.namaPasien || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>NIK</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.NIK || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+          {loading ? (
+            <div className="text-center py-4">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : queueInfo ? (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Label>NIK Pasien</Form.Label>
+                <Form.Control 
+                  readOnly 
+                  value={selectedPasien.NIK} 
+                  className="fw-bold"
+                />
+              </Form.Group>
 
-            {/* Bagian Nama Dokter dan Spesialis */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Nama Dokter</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.namaDokter || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Spesialis</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.spesialis || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+              <Row className="mb-4">
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Medical Record Hash</Form.Label>
+                    <Form.Control 
+                      readOnly 
+                      value={queueInfo.mrHash} 
+                      className="font-monospace"
+                    />
+                  </Form.Group>
+                </Col>
+                
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Nomor Antrian</Form.Label>
+                    <Form.Control 
+                      readOnly 
+                      value={queueInfo.queueNumber} 
+                    />
+                  </Form.Group>
+                </Col>
+                
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>ID Jadwal</Form.Label>
+                    <Form.Control 
+                      readOnly 
+                      value={queueInfo.scheduleId} 
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            {/* Bagian Nomor Praktek dan Jadwal Dokter */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Nomor Praktek</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.nomorPraktek || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Jadwal Dokter</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.jadwalDokter || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            {/* Bagian Ruang Praktek */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Ruang Praktek</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.ruangPraktek || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
+              <div className="d-flex justify-content-end">
+                <Button
+                  variant="outline-danger"
+                  onClick={handleDequeue}
+                  disabled={dequeueLoading}
+                >
+                  {dequeueLoading ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Memproses...
+                    </>
+                  ) : "Hapus dari Antrian"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-muted py-4">
+              {selectedPasien 
+                ? "Tidak ditemukan data antrian" 
+                : "Hasil pencarian akan muncul di sini"}
+            </div>
+          )}
         </Card.Body>
       </Card>
     </Container>

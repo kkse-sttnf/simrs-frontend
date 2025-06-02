@@ -34,7 +34,6 @@ const DetailPasien = () => {
         console.log("Raw doctorList from contract.listOfDoctors():", doctorList); 
         
         const formattedDoctors = doctorList.map(doctor => {
-
           return {
             id: doctor[0]?.toString() || '', 
             namaDokter: doctor[1] || '',
@@ -56,7 +55,6 @@ const DetailPasien = () => {
           const doctor = await contract.doctors(i);
           console.log(`Raw doctor data for index ${i} from contract.doctors(${i}):`, doctor); 
           
-         
           if (doctor) { 
             doctors.push({
               id: doctor[0]?.toString() || '',
@@ -98,8 +96,10 @@ const DetailPasien = () => {
     setSearchStatus(status);
   };
 
-  const handleSaveRawatJalan = async (data) => {
+  const handleSaveRawatJalan = async (registrationData) => {
     try {
+      const { patient, doctor, schedule } = registrationData;
+      
       Swal.fire({
         title: 'Processing Registration',
         html: 'Saving data to blockchain...',
@@ -107,15 +107,10 @@ const DetailPasien = () => {
         didOpen: () => Swal.showLoading()
       });
 
+      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(patient.nik));
+      const scheduleId = convertJadwalToId(schedule);
       
-      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(data.NIK));
-      
-      
-      const scheduleId = convertJadwalToId(data.jadwalDokter);
-      
-     
-      await enqueuePatient(mrHash, scheduleId);
-      
+      const tx = await enqueuePatient(mrHash, scheduleId);
       
       const queueNumber = await getQueueNumber(mrHash);
 
@@ -126,8 +121,10 @@ const DetailPasien = () => {
           <div>
             <p>Your outpatient registration has been saved to the blockchain</p>
             <p><strong>Queue Number:</strong> ${queueNumber.toString()}</p>
-            <p><strong>Schedule:</strong> ${data.jadwalDokter}</p>
-            <p><strong>Doctor:</strong> ${data.namaDokter}</p>
+            <p><strong>Patient:</strong> ${patient.namaLengkap}</p>
+            <p><strong>Schedule:</strong> ${schedule}</p>
+            <p><strong>Doctor:</strong> ${doctor.namaDokter}</p>
+            <small>Transaction: ${tx.hash.slice(0, 10)}...</small>
           </div>
         `,
         confirmButtonText: 'Close'
@@ -143,7 +140,7 @@ const DetailPasien = () => {
         html: `
           <div>
             <p>Error during registration:</p>
-            <p><code>${error.message || 'Unknown error'}</code></p>
+            <p><code>${error.reason || error.message || 'Unknown error'}</code></p>
           </div>
         `
       });
@@ -151,7 +148,6 @@ const DetailPasien = () => {
     }
   };
 
-  
   const convertJadwalToId = (jadwalText) => {
     const dayMap = {
       'senin': 1,

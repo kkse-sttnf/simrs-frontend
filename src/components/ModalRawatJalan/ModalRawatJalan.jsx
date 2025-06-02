@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Row, Col, Spinner, Alert } from "react-bootstrap";
-import { getContract as getOutpatientContract } from "../../utils/outpatientContract"; // Import untuk kontrak rawat jalan
-import { getContract as getDoctorContract } from "../../utils/doctorContract";   // Import untuk kontrak dokter
+import { getContract as getOutpatientContract, enqueuePatient, getQueueNumber } from "../../utils/outpatientContract";
+import { getContract as getDoctorContract } from "../../utils/doctorContract";
 import Swal from "sweetalert2";
 import { ethers } from "ethers";
 
@@ -9,8 +9,8 @@ const ModalRawatJalan = ({
   show,
   handleClose,
   selectedPatient,
-  dokter = [], // Ini adalah prop 'dokter' yang berisi daftar semua dokter dari parent
-  onSave,     // Ini adalah prop 'handleSaveRawatJalan' dari parent
+  dokter = [],
+  onSave,
   loadingDokter,
   errorDokter
 }) => {
@@ -21,90 +21,55 @@ const ModalRawatJalan = ({
   const [scheduleError, setScheduleError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Memoize convertDayNumber as it's a stable helper function
   const convertDayNumber = useCallback((dayNum) => {
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    return days[dayNum] || `Day-${dayNum}`;
+    return days[dayNum] || `Hari-${dayNum}`;
   }, []);
 
-  // Memoize fetchDoctorSchedules to prevent unnecessary re-creations
   const fetchDoctorSchedules = useCallback(async (doctorId) => {
     if (!doctorId) return;
 
     setLoadingSchedules(true);
     setScheduleError(null);
-    setSelectedSchedule(""); // Clear selected schedule when doctor changes
+    setSelectedSchedule("");
 
     try {
-      // PENTING: Gunakan getDoctorContract untuk mengambil jadwal dokter
       const doctorContract = await getDoctorContract();
       const schedules = await doctorContract.getDoctorSchedules(doctorId);
 
-      const formattedSchedules = schedules.map(schedule => {
-        const scheduleData = {
-          id: schedule.id?.toString() || schedule[0]?.toString(),
-          day: schedule.day || schedule[2],
-          startTime: schedule.startTime || schedule.start || schedule[3],
-          endTime: schedule.endTime || schedule.end || schedule[4],
-          room: schedule.room || schedule[5]
-        };
-
-        return {
-          id: scheduleData.id,
-          hariPraktek: convertDayNumber(Number(scheduleData.day)),
-          waktuMulai: scheduleData.startTime,
-          waktuSelesai: scheduleData.endTime,
-          ruangPraktek: scheduleData.room
-        };
-      });
+      const formattedSchedules = schedules.map(schedule => ({
+        id: schedule[0]?.toString(),
+        hariPraktek: convertDayNumber(Number(schedule[2])),
+        waktuMulai: schedule[3],
+        waktuSelesai: schedule[4],
+        ruangPraktek: schedule[5]
+      }));
 
       setDoctorSchedules(formattedSchedules);
     } catch (error) {
-      console.error("Failed to load schedules:", error);
-      // Pesan error yang lebih informatif
-      setScheduleError("Gagal memuat jadwal dokter. Pastikan kontrak dokter terhubung dan fungsi 'getDoctorSchedules' tersedia di ABI-nya.");
+      console.error("Gagal memuat jadwal:", error);
+      setScheduleError("Gagal memuat jadwal dokter. Silakan coba lagi.");
     } finally {
       setLoadingSchedules(false);
     }
   }, [convertDayNumber]);
 
-  // useEffect for fetching schedules when selectedDoctor changes
   useEffect(() => {
     if (selectedDoctor?.id) {
       fetchDoctorSchedules(selectedDoctor.id);
     } else {
       setDoctorSchedules([]);
-      setSelectedSchedule("");
     }
   }, [selectedDoctor, fetchDoctorSchedules]);
 
-  // useEffect for resetting state when modal closes
-  useEffect(() => {
-    if (!show) {
-      setSelectedDoctor(null);
-      setSelectedSchedule("");
-      setDoctorSchedules([]);
-      setScheduleError(null);
-      setIsSubmitting(false);
-    }
-  }, [show]);
-
   const handleSave = async () => {
     if (!selectedPatient) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Pasien Belum Dipilih',
-        text: 'Harap cari dan pilih pasien terlebih dahulu.',
-      });
+      Swal.fire("Error", "Pasien belum dipilih", "error");
       return;
     }
 
     if (!selectedDoctor || !selectedSchedule) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Data Belum Lengkap',
-        text: 'Harap pilih dokter dan jadwal terlebih dahulu',
-      });
+      Swal.fire("Peringatan", "Harap pilih dokter dan jadwal", "warning");
       return;
     }
 
@@ -112,279 +77,197 @@ const ModalRawatJalan = ({
 
     try {
       const selectedScheduleData = doctorSchedules.find(
-        s => `${s.hariPraktek} ${s.waktuMulai} - ${s.waktuSelesai}` === selectedSchedule
+        s => `${s.hariPraktek} ${s.waktuMulai}-${s.waktuSelesai}` === selectedSchedule
       );
 
       if (!selectedScheduleData) {
-        throw new Error("Data jadwal tidak ditemukan dalam daftar yang dimuat.");
+        throw new Error("Data jadwal tidak valid");
       }
 
-      const dataToSave = {
-        namaPasien: selectedPatient?.namaLengkap || "",
-        NIK: selectedPatient?.nik || "",
-        namaDokter: selectedDoctor.namaDokter,
-        spesialis: selectedDoctor.spesialis,
-        nomorPraktek: selectedDoctor.nomorPraktek,
-        jadwalDokter: selectedSchedule,
-        ruangPraktek: selectedScheduleData.ruangPraktek || selectedDoctor.ruangPraktek,
-      };
+      // Generate hash dari NIK pasien
+      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(selectedPatient.nik));
+      const scheduleId = convertJadwalToId(selectedSchedule);
 
-      // Create medical record hash from NIK
-      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(dataToSave.NIK));
-
-      // Convert schedule text to ID (e.g., "Senin" -> 1)
-      const scheduleId = convertJadwalToId(dataToSave.jadwalDokter);
-
-      // PENTING: Gunakan getOutpatientContract untuk operasi antrian
-      const outpatientContract = await getOutpatientContract();
-
-      // Periksa apakah pasien sudah ada di antrian
-      let existingQueueNumber;
-      try {
-        existingQueueNumber = await outpatientContract.getQueueNumber(mrHash);
-      } catch (error) {
-        // Tangani error decoding atau data yang tidak valid dari kontrak (misal: 0x)
-        if (error.code === 'BAD_DATA' && error.value === '0x') {
-            console.warn(`getQueueNumber for ${mrHash} returned 0x. Interpreting as 0.`);
-            existingQueueNumber = ethers.toBigInt(0); // Mengembalikan BigInt 0 yang konsisten
-        } else {
-            throw error; // Lemparkan error lain
-        }
-      }
-
-      if (existingQueueNumber.toString() !== "0") { // Check if not zero
-        const result = await Swal.fire({
-          title: 'Pasien Sudah Terdaftar',
-          html: `Pasien ini sudah terdaftar dengan nomor antrian: <b>${existingQueueNumber.toString()}</b>. <br> Apakah Anda ingin mendaftar ulang?`,
-          icon: 'info',
+      // Cek apakah pasien sudah terdaftar menggunakan mrHashToQueueNumber
+      const existingQueue = await getQueueNumber(mrHash);
+      if (existingQueue.toString() !== "0") {
+        const confirm = await Swal.fire({
+          title: "Pasien Sudah Terdaftar",
+          html: `Pasien ini sudah memiliki nomor antrian: <b>${existingQueue.toString()}</b>`,
+          icon: "warning",
           showCancelButton: true,
-          confirmButtonText: 'Ya, Daftar Ulang',
-          cancelButtonText: 'Batal'
+          confirmButtonText: "Daftar Ulang",
+          cancelButtonText: "Batal"
         });
 
-        if (!result.isConfirmed) {
-          setIsSubmitting(false);
-          return false; // User cancelled re-registration
+        if (!confirm.isConfirmed) {
+          return;
         }
       }
 
-      // Show loading for transaction
       Swal.fire({
-        title: 'Mengirim Transaksi',
-        html: `Mendaftarkan pasien...<br>Hash MR: ${mrHash.slice(0, 10)}...`,
-        icon: 'info',
+        title: "Memproses...",
+        html: "Sedang mendaftarkan pasien",
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
 
-      // Enqueue patient
-      const tx = await outpatientContract.enqueue(mrHash, scheduleId);
-      const receipt = await tx.wait();
+      // Eksekusi pendaftaran menggunakan enqueuePatient utility
+      const tx = await enqueuePatient(mrHash, scheduleId);
+      
+      // Listen for PatientEnqueued event
+      const contract = await getOutpatientContract();
+      contract.on("PatientEnqueued", (hash, sId, queueNum) => {
+        if (hash === mrHash) {
+          Swal.fire({
+            title: "Pendaftaran Berhasil!",
+            html: `
+              <div>
+                <p>Nomor Antrian: <b>${queueNum}</b></p>
+                <p>Dokter: ${selectedDoctor.namaDokter}</p>
+                <p>Jadwal: ${selectedSchedule}</p>
+                <small>TX Hash: ${tx.hash.slice(0, 10)}...</small>
+              </div>
+            `,
+            icon: "success",
+          });
 
-      if (receipt.status !== 1) {
-        throw new Error("Transaksi pendaftaran rawat jalan gagal di blockchain.");
-      }
+          if (onSave) {
+            onSave({
+              patient: selectedPatient,
+              doctor: selectedDoctor,
+              schedule: selectedSchedule,
+              queueNumber: queueNum.toString()
+            });
+          }
 
-      const queueNumber = await outpatientContract.getQueueNumber(mrHash);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Pendaftaran Berhasil!',
-        html: `
-          <div>
-            <p>Pendaftaran rawat jalan Anda telah disimpan di blockchain.</p>
-            <p><strong>Nomor Antrian:</strong> ${queueNumber.toString()}</p>
-            <p><strong>Jadwal:</strong> ${dataToSave.jadwalDokter}</p>
-            <p><strong>Dokter:</strong> ${dataToSave.namaDokter}</p>
-          </div>
-        `,
-        confirmButtonText: 'Oke'
+          handleClose();
+          contract.removeAllListeners("PatientEnqueued");
+        }
       });
-
-      handleClose(); // Close modal on success
-      return true;
-
+      
     } catch (error) {
-      console.error("Error during registration:", error);
-
-      let errorMessage = 'Terjadi kesalahan saat mendaftar rawat jalan.';
-      if (error.message.includes("Patient already in queue")) {
-        errorMessage = 'Pasien ini sudah terdaftar dalam antrian.';
-      } else if (error.code === 'ACTION_REJECTED') {
-        errorMessage = "Transaksi dibatalkan oleh pengguna.";
-      } else if (error.code === 'CALL_EXCEPTION') {
-        errorMessage = "Anda tidak memiliki izin untuk melakukan operasi ini atau ada masalah kontrak.";
+      console.error("Error:", error);
+      let errorMsg = "Gagal mendaftarkan pasien";
+      if (error.code === 'ACTION_REJECTED') {
+        errorMsg = "Transaksi dibatalkan";
       } else if (error.reason) {
-        errorMessage = error.reason;
-      } else if (error.message.includes("execution reverted")) {
-        errorMessage = "Transaksi gagal dieksekusi di blockchain. Periksa log kontrak.";
+        errorMsg = error.reason;
       }
-
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Mendaftar',
-        text: errorMessage,
-      });
-      return false;
+      Swal.fire("Error", errorMsg, "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Helper function to convert schedule text to ID
   const convertJadwalToId = (jadwalText) => {
     const dayMap = {
-      'senin': 1,
-      'selasa': 2,
-      'rabu': 3,
-      'kamis': 4,
-      'jumat': 5,
-      'sabtu': 6,
-      'minggu': 7
+      'senin': 1, 'selasa': 2, 'rabu': 3, 
+      'kamis': 4, 'jumat': 5, 'sabtu': 6, 'minggu': 7
     };
 
-    const lowerJadwal = jadwalText.toLowerCase();
-    for (const [day, id] of Object.entries(dayMap)) {
-      if (lowerJadwal.includes(day)) {
-        return id;
-      }
-    }
-    return 0; // Default ID if no match is found
+    const hari = jadwalText.toLowerCase().split(' ')[0];
+    return dayMap[hari] || 0;
   };
-
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" backdrop="static">
       <Modal.Header closeButton>
-        <Modal.Title>Form Daftar Rawat Jalan</Modal.Title>
+        <Modal.Title>Pendaftaran Rawat Jalan</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {errorDokter && <Alert variant="danger">{errorDokter}</Alert>}
         {scheduleError && <Alert variant="danger">{scheduleError}</Alert>}
 
         <Form>
+          {/* Form Data Pasien */}
           <Row className="mb-3">
-            <Col md={12}>
+            <Col md={6}>
               <Form.Group>
-                <Form.Label>Patient Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={selectedPatient?.namaLengkap || "Patient not found"}
-                  readOnly
+                <Form.Label>Nama Pasien</Form.Label>
+                <Form.Control 
+                  readOnly 
+                  value={selectedPatient?.namaLengkap || "Belum dipilih"} 
                 />
               </Form.Group>
             </Col>
-          </Row>
-
-          <Row className="mb-3">
-            <Col md={12}>
+            <Col md={6}>
               <Form.Group>
                 <Form.Label>NIK</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={selectedPatient?.nik || ""}
-                  readOnly
+                <Form.Control 
+                  readOnly 
+                  value={selectedPatient?.nik || ""} 
                 />
               </Form.Group>
             </Col>
           </Row>
 
+          {/* Pilihan Dokter */}
           <Row className="mb-3">
             <Col md={12}>
               <Form.Group>
-                <Form.Label>Select Doctor</Form.Label>
+                <Form.Label>Pilih Dokter</Form.Label>
                 {loadingDokter ? (
                   <div className="text-center">
-                    <Spinner size="sm" animation="border" />
-                    <span> Loading doctors...</span>
+                    <Spinner size="sm" /> Memuat data dokter...
                   </div>
                 ) : (
                   <Form.Select
                     value={selectedDoctor?.id || ""}
                     onChange={(e) => {
-                      const doctorId = e.target.value;
-                      const doctor = dokter.find((d) => d.id === doctorId);
-                      setSelectedDoctor(doctor);
+                      const doc = dokter.find(d => d.id === e.target.value);
+                      setSelectedDoctor(doc);
                     }}
-                    disabled={loadingDokter || dokter.length === 0}
+                    disabled={loadingDokter}
                   >
-                    <option value="">Select Doctor</option>
-                    {dokter.map((doctor) => (
-                      <option key={doctor.id} value={doctor.id}>
-                        {doctor.namaDokter} ({doctor.spesialis})
+                    <option value="">Pilih Dokter</option>
+                    {dokter.map(doc => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.namaDokter} ({doc.spesialis})
                       </option>
                     ))}
                   </Form.Select>
                 )}
-                {dokter.length === 0 && !loadingDokter && (
-                  <div className="text-danger mt-1">
-                    No doctor data available
-                  </div>
-                )}
               </Form.Group>
             </Col>
           </Row>
 
+          {/* Jadwal Praktek */}
           {selectedDoctor && (
             <Row className="mb-3">
               <Col md={12}>
                 <Form.Group>
-                  <Form.Label>Spesialisasi</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedDoctor.spesialis}
-                    readOnly
-                  />
+                  <Form.Label>Pilih Jadwal</Form.Label>
+                  {loadingSchedules ? (
+                    <div className="text-center">
+                      <Spinner size="sm" /> Memuat jadwal...
+                    </div>
+                  ) : (
+                    <Form.Select
+                      value={selectedSchedule}
+                      onChange={(e) => setSelectedSchedule(e.target.value)}
+                      disabled={loadingSchedules}
+                    >
+                      <option value="">Pilih Jadwal</option>
+                      {doctorSchedules.map((schedule, i) => (
+                        <option 
+                          key={i} 
+                          value={`${schedule.hariPraktek} ${schedule.waktuMulai}-${schedule.waktuSelesai}`}
+                        >
+                          {`${schedule.hariPraktek}: ${schedule.waktuMulai}-${schedule.waktuSelesai} (${schedule.ruangPraktek})`}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  )}
                 </Form.Group>
               </Col>
             </Row>
           )}
-
-          <Row className="mb-3">
-            <Col md={12}>
-              <Form.Group>
-                <Form.Label>Select Schedule</Form.Label>
-                {loadingSchedules ? (
-                  <div className="text-center">
-                    <Spinner size="sm" animation="border" />
-                    <span> Loading schedules...</span>
-                  </div>
-                ) : (
-                  <Form.Select
-                    value={selectedSchedule}
-                    onChange={(e) => setSelectedSchedule(e.target.value)}
-                    disabled={!selectedDoctor || loadingSchedules || doctorSchedules.length === 0} // Disable if no schedules
-                  >
-                    <option value="">Select Schedule</option>
-                    {selectedDoctor && doctorSchedules.length > 0 ? (
-                      doctorSchedules.map((schedule, index) => (
-                        <option
-                          key={schedule.id || index} // Use schedule.id as key if available, fallback to index
-                          value={`${schedule.hariPraktek} ${schedule.waktuMulai} - ${schedule.waktuSelesai}`}
-                        >
-                          {`${schedule.hariPraktek}: ${schedule.waktuMulai} - ${schedule.waktuSelesai} (Room: ${schedule.ruangPraktek})`}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>
-                        {selectedDoctor ? "No available schedules" : "Please select a doctor first"}
-                      </option>
-                    )}
-                  </Form.Select>
-                )}
-                {selectedDoctor && !loadingSchedules && doctorSchedules.length === 0 && (
-                  <div className="text-danger mt-1">
-                    No schedules available for this doctor.
-                  </div>
-                )}
-              </Form.Group>
-            </Col>
-          </Row>
         </Form>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
-          Cancel
+          Batal
         </Button>
         <Button
           variant="primary"
@@ -393,12 +276,9 @@ const ModalRawatJalan = ({
         >
           {isSubmitting ? (
             <>
-              <Spinner as="span" size="sm" animation="border" role="status" />
-              {' Processing...'}
+              <Spinner size="sm" /> Memproses...
             </>
-          ) : (
-            'Register'
-          )}
+          ) : "Daftarkan"}
         </Button>
       </Modal.Footer>
     </Modal>
