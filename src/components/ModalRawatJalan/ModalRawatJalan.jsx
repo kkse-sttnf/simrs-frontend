@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Row, Col, Spinner, Alert } from "react-bootstrap";
-import { getContract as getOutpatientContract, enqueuePatient, getQueueNumber } from "../../utils/outpatientContract";
+import { getContract as getOutpatientContract, enqueuePatient, getQueueNumber, getQueueInfo } from "../../utils/outpatientContract";
 import { getContract as getDoctorContract } from "../../utils/doctorContract";
 import Swal from "sweetalert2";
 import { ethers } from "ethers";
@@ -62,6 +62,16 @@ const ModalRawatJalan = ({
     }
   }, [selectedDoctor, fetchDoctorSchedules]);
 
+  const convertJadwalToId = (jadwalText) => {
+    const dayMap = {
+      'minggu': 0, 'senin': 1, 'selasa': 2, 
+      'rabu': 3, 'kamis': 4, 'jumat': 5, 'sabtu': 6
+    };
+
+    const hari = jadwalText.toLowerCase().split(' ')[0];
+    return dayMap[hari] || 0;
+  };
+
   const handleSave = async () => {
     if (!selectedPatient) {
       Swal.fire("Error", "Pasien belum dipilih", "error");
@@ -74,6 +84,7 @@ const ModalRawatJalan = ({
     }
 
     setIsSubmitting(true);
+    let swalInstance = null;
 
     try {
       const selectedScheduleData = doctorSchedules.find(
@@ -88,16 +99,30 @@ const ModalRawatJalan = ({
       const mrHash = ethers.keccak256(ethers.toUtf8Bytes(selectedPatient.nik));
       const scheduleId = convertJadwalToId(selectedSchedule);
 
-      // Cek apakah pasien sudah terdaftar menggunakan mrHashToQueueNumber
+      // Cek apakah pasien sudah terdaftar (menggunakan fungsi yang diperbaiki)
       const existingQueue = await getQueueNumber(mrHash);
-      if (existingQueue.toString() !== "0") {
+      
+      if (existingQueue > 0) {
+        const queueInfo = await getQueueInfo(mrHash);
+        
         const confirm = await Swal.fire({
           title: "Pasien Sudah Terdaftar",
-          html: `Pasien ini sudah memiliki nomor antrian: <b>${existingQueue.toString()}</b>`,
+          html: `
+            <div>
+              <p>Pasien ini sudah terdaftar dengan:</p>
+              <ul>
+                <li>Nomor Antrian: <b>${queueInfo.queueNumber}</b></li>
+                <li>ID Jadwal: <b>${queueInfo.scheduleId}</b></li>
+              </ul>
+              <p>Apakah Anda ingin mendaftarkan ulang?</p>
+            </div>
+          `,
           icon: "warning",
           showCancelButton: true,
           confirmButtonText: "Daftar Ulang",
-          cancelButtonText: "Batal"
+          cancelButtonText: "Batal",
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33"
         });
 
         if (!confirm.isConfirmed) {
@@ -105,69 +130,72 @@ const ModalRawatJalan = ({
         }
       }
 
-      Swal.fire({
-        title: "Memproses...",
-        html: "Sedang mendaftarkan pasien",
+      swalInstance = Swal.fire({
+        title: "Memproses Pendaftaran",
+        html: "Sedang memproses pendaftaran pasien...",
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
 
-      // Eksekusi pendaftaran menggunakan enqueuePatient utility
+      // Eksekusi pendaftaran
       const tx = await enqueuePatient(mrHash, scheduleId);
+      const receipt = await tx.wait();
+
+      // Dapatkan nomor antrian terbaru
+      const newQueueNumber = await getQueueNumber(mrHash);
       
-      // Listen for PatientEnqueued event
-      const contract = await getOutpatientContract();
-      contract.on("PatientEnqueued", (hash, sId, queueNum) => {
-        if (hash === mrHash) {
-          Swal.fire({
-            title: "Pendaftaran Berhasil!",
-            html: `
-              <div>
-                <p>Nomor Antrian: <b>${queueNum}</b></p>
-                <p>Dokter: ${selectedDoctor.namaDokter}</p>
-                <p>Jadwal: ${selectedSchedule}</p>
-                <small>TX Hash: ${tx.hash.slice(0, 10)}...</small>
-              </div>
-            `,
-            icon: "success",
+      if (newQueueNumber > 0) {
+        await Swal.fire({
+          title: "Pendaftaran Berhasil!",
+          html: `
+            <div>
+              <p><strong>Nomor Antrian Baru:</strong> ${newQueueNumber}</p>
+              <p><strong>Nama Pasien:</strong> ${selectedPatient.namaLengkap}</p>
+              <p><strong>Dokter:</strong> ${selectedDoctor.namaDokter}</p>
+              <p><strong>Jadwal:</strong> ${selectedSchedule}</p>
+              <small>TX Hash: ${receipt.transactionHash.slice(0, 10)}...</small>
+            </div>
+          `,
+          icon: "success"
+        });
+
+        if (onSave) {
+          onSave({
+            patient: selectedPatient,
+            doctor: selectedDoctor,
+            schedule: selectedSchedule,
+            queueNumber: newQueueNumber.toString(),
+            transactionHash: receipt.transactionHash
           });
-
-          if (onSave) {
-            onSave({
-              patient: selectedPatient,
-              doctor: selectedDoctor,
-              schedule: selectedSchedule,
-              queueNumber: queueNum.toString()
-            });
-          }
-
-          handleClose();
-          contract.removeAllListeners("PatientEnqueued");
         }
-      });
-      
+
+        handleClose();
+      } else {
+        throw new Error("Gagal mendapatkan nomor antrian setelah pendaftaran");
+      }
     } catch (error) {
       console.error("Error:", error);
+      
       let errorMsg = "Gagal mendaftarkan pasien";
       if (error.code === 'ACTION_REJECTED') {
-        errorMsg = "Transaksi dibatalkan";
+        errorMsg = "Transaksi dibatalkan oleh pengguna";
       } else if (error.reason) {
-        errorMsg = error.reason;
+        errorMsg = error.reason.replace('execution reverted: ', '');
+      } else if (error.message) {
+        errorMsg = error.message;
       }
-      Swal.fire("Error", errorMsg, "error");
+
+      await Swal.fire({
+        title: "Terjadi Kesalahan",
+        text: errorMsg,
+        icon: "error"
+      });
     } finally {
+      if (swalInstance) {
+        swalInstance.close();
+      }
       setIsSubmitting(false);
     }
-  };
-
-  const convertJadwalToId = (jadwalText) => {
-    const dayMap = {
-      'senin': 1, 'selasa': 2, 'rabu': 3, 
-      'kamis': 4, 'jumat': 5, 'sabtu': 6, 'minggu': 7
-    };
-
-    const hari = jadwalText.toLowerCase().split(' ')[0];
-    return dayMap[hari] || 0;
   };
 
   return (
@@ -180,7 +208,6 @@ const ModalRawatJalan = ({
         {scheduleError && <Alert variant="danger">{scheduleError}</Alert>}
 
         <Form>
-          {/* Form Data Pasien */}
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
@@ -202,7 +229,6 @@ const ModalRawatJalan = ({
             </Col>
           </Row>
 
-          {/* Pilihan Dokter */}
           <Row className="mb-3">
             <Col md={12}>
               <Form.Group>
@@ -232,7 +258,6 @@ const ModalRawatJalan = ({
             </Col>
           </Row>
 
-          {/* Jadwal Praktek */}
           {selectedDoctor && (
             <Row className="mb-3">
               <Col md={12}>
