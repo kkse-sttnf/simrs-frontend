@@ -71,7 +71,6 @@ const FormTambahPasien = () => {
           const jsonFormData = formData;
           const pinata = getPinata();
           const dataName = uuidV4(randomBytes(16)) + ".json";
-          console.log(dataName);
           const upload = await pinata.upload.public.json(jsonFormData).name(dataName);
           const cid = upload.cid;
           const nik = formData.nik

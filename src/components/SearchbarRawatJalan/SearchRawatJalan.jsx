@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Form, Button, InputGroup, Container, Alert, Spinner, Row, Col } from "react-bootstrap";
 import Swal from "sweetalert2";
-import { getContract } from "../../utils/outpatientContract";
+import { getContract as getOutpatientContract} from "../../utils/outpatientContract";
+import { getContract as getPatientContract  } from "../../utils/patientContract";
 
 const SearchRawatJalan = ({ onSelectPasien }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,20 +23,22 @@ const SearchRawatJalan = ({ onSelectPasien }) => {
     setError(null);
 
     try {
-      const contract = await getContract();
-      const [mrHash, queueNumber, scheduleId] = await contract.getQueueInfo(searchQuery);
+      const patientContract = await getPatientContract();
+      const [nik,cid,mrHash] = await patientContract.lookup(searchQuery);
+      const outPatienContract = await getOutpatientContract();
+      const [mrHash2, scheduleId, queueNumber] = await getOutpatientContract.getQueueInfo;
       
       // Validate queue exists
-      if (queueNumber.toString() === "0") {
+      if (lookupData.queueNumber() === "0") {
         throw new Error("Pasien tidak memiliki antrian aktif");
       }
 
       // Format patient data
       const patientData = {
         NIK: searchQuery,
-        mrHash,
-        queueNumber: queueNumber.toString(),
-        scheduleId: scheduleId.toString(),
+        mrHash : lookupData.mrHash,
+        queueNumber: lookupData.queueNumber,
+        scheduleId: lookupData.scheduleId,
         namaPasien: `Pasien ${searchQuery}` // In production, get from contract
       };
 

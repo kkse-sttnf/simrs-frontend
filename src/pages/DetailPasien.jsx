@@ -22,7 +22,8 @@ const DetailPasien = () => {
     success: false
   });
 
-  const fetchDoctorsFromBlockchain = async () => {
+  // Fungsi untuk mengambil data dokter dari blockchain
+ const fetchDoctorsFromBlockchain = async () => {
     setLoadingDokter(true);
     setErrorDokter(null);
     
@@ -96,51 +97,64 @@ const DetailPasien = () => {
     setSearchStatus(status);
   };
 
+  // Fungsi untuk menyimpan data rawat jalan
   const handleSaveRawatJalan = async (registrationData) => {
     try {
       const { patient, doctor, schedule } = registrationData;
       
       Swal.fire({
-        title: 'Processing Registration',
-        html: 'Saving data to blockchain...',
+        title: 'Memproses Pendaftaran',
+        html: 'Menyimpan data ke blockchain...',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
 
+      // Generate hash dari NIK pasien
       const mrHash = ethers.keccak256(ethers.toUtf8Bytes(patient.nik));
       const scheduleId = convertJadwalToId(schedule);
       
+      // Kirim transaksi ke blockchain
       const tx = await enqueuePatient(mrHash, scheduleId);
+      await tx.wait(); // Tunggu konfirmasi transaksi
       
+      // Dapatkan nomor antrian
       const queueNumber = await getQueueNumber(mrHash);
 
       Swal.fire({
         icon: 'success',
-        title: 'Registration Successful!',
+        title: 'Pendaftaran Berhasil!',
         html: `
           <div>
-            <p>Your outpatient registration has been saved to the blockchain</p>
-            <p><strong>Queue Number:</strong> ${queueNumber.toString()}</p>
-            <p><strong>Patient:</strong> ${patient.namaLengkap}</p>
-            <p><strong>Schedule:</strong> ${schedule}</p>
-            <p><strong>Doctor:</strong> ${doctor.namaDokter}</p>
-            <small>Transaction: ${tx.hash.slice(0, 10)}...</small>
+            <p>Pendaftaran rawat jalan telah disimpan di blockchain</p>
+            <p><strong>Nomor Antrian:</strong> ${queueNumber.toString()}</p>
+            <p><strong>Pasien:</strong> ${patient.namaLengkap}</p>
+            <p><strong>Jadwal:</strong> ${schedule}</p>
+            <p><strong>Dokter:</strong> ${doctor.namaDokter}</p>
+            <small>Transaksi: ${tx.hash.slice(0, 10)}...</small>
           </div>
         `,
-        confirmButtonText: 'Close'
+        confirmButtonText: 'Tutup'
       });
 
       setShowModal(false);
       return true;
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Error pendaftaran:', error);
+      
+      let errorMessage = 'Terjadi kesalahan saat mendaftarkan pasien';
+      if (error.code === 'ACTION_REJECTED') {
+        errorMessage = 'Transaksi dibatalkan oleh pengguna';
+      } else if (error.reason) {
+        errorMessage = error.reason.replace('execution reverted: ', '');
+      }
+      
       Swal.fire({
         icon: 'error',
-        title: 'Registration Failed',
+        title: 'Pendaftaran Gagal',
         html: `
           <div>
-            <p>Error during registration:</p>
-            <p><code>${error.reason || error.message || 'Unknown error'}</code></p>
+            <p>${errorMessage}</p>
+            ${error.data?.message ? `<p><small>${error.data.message}</small></p>` : ''}
           </div>
         `
       });
@@ -148,6 +162,7 @@ const DetailPasien = () => {
     }
   };
 
+  // Konversi teks jadwal ke ID
   const convertJadwalToId = (jadwalText) => {
     const dayMap = {
       'senin': 1,
@@ -182,7 +197,7 @@ const DetailPasien = () => {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p>Searching patient data...</p>
+          <p>Mencari data pasien...</p>
         </div>
       )}
       
@@ -197,7 +212,7 @@ const DetailPasien = () => {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p>Loading doctor data...</p>
+          <p>Memuat data dokter...</p>
         </div>
       )}
       
@@ -208,7 +223,7 @@ const DetailPasien = () => {
             className="btn btn-sm btn-warning ms-3"
             onClick={fetchDoctorsFromBlockchain}
           >
-            Try Again
+            Coba Lagi
           </button>
         </div>
       )}

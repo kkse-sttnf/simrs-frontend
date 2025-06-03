@@ -10,6 +10,9 @@ const contractAbi =
 
 let contractInstance = null;
 
+const provider = new ethers.BrowserProvider(window.ethereum);
+provider.on("debug", (data) => console.log("Provider Debug:", data));
+
 export const getContract = async () => {
     if (!window.ethereum) {
         throw new Error('Aplikasi memerlukan MetaMask. Pastikan Anda sudah login.');

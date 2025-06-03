@@ -2,11 +2,11 @@ import { ethers } from 'ethers';
 
 const contractAddress = '0xD621CDd49B5E21b235e0E87bef92703adf901b4c';
 const contractAbi = [
-  'event PatientDequeued(string)',
-  'event PatientEnqueued(string,uint256,uint256)',
-  'function dequeue(string)',
-  'function enqueue(string,uint256)',
-  'function getQueueInfo(string) view returns ((string,uint256,uint256))',
+  'event PatientDequeued(string mrHash)',
+  'event PatientEnqueued(string mrHash, uint256 scheduleId, uint256 queueNumber)',
+  'function dequeue(string mrHash)',
+  'function enqueue(string mrHash, uint256 scheduleId)',
+  'function getQueueInfo(string mrHash) view returns ((string mrHash, uint256 scheduleId, uint256 queueNumber))',
   'function mrHashToQueueNumber(string) view returns (uint256)',
   'function mrHashToScheduleId(string) view returns (uint256)',
   'function scheduleIdToCounter(uint256) view returns (uint256)'
@@ -38,41 +38,43 @@ export const resetContract = () => {
   contractInstance = null;
 };
 
+// Fungsi untuk mendaftarkan pasien
 export const enqueuePatient = async (mrHash, scheduleId) => {
-  const contract = await getContract();
-  const tx = await contract.enqueue(mrHash, scheduleId);
-  return tx;
-};
-
-// Fungsi yang diperbaiki - menggunakan mrHashToQueueNumber sesuai ABI
-export const getQueueNumber = async (mrHash) => {
-  const contract = await getContract();
   try {
-    const queueNum = await contract.mrHashToQueueNumber(mrHash);
-    return Number(queueNum.toString());
+    const contract = await getContract();
+    const tx = await contract.enqueue(mrHash, scheduleId);
+    return tx;
   } catch (error) {
-    console.error("Error getting queue number:", error);
-    return 0;
+    console.error('Error enqueueing patient:', error);
+    throw error;
   }
 };
 
-// Fungsi tambahan untuk mendapatkan info lengkap antrian
-export const getQueueInfo = async (mrHash) => {
-  const contract = await getContract();
+// Fungsi untuk mendapatkan nomor antrian
+export const getQueueNumber = async (mrHash) => {
   try {
-    const [exists, queueNum, scheduleId] = await contract.getQueueInfo(mrHash);
+    const contract = await getContract();
+    const queueNumber = await contract.mrHashToQueueNumber(mrHash);
+    return queueNumber;
+  } catch (error) {
+    console.error('Error getting queue number:', error);
+    throw error;
+  }
+};
+
+// Fungsi untuk mendapatkan info antrian
+export const getQueueInfo = async (mrHash) => {
+  try {
+    const contract = await getContract();
+    const queueInfo = await contract.getQueueInfo(mrHash);
     return {
-      isRegistered: exists,
-      queueNumber: Number(queueNum.toString()),
-      scheduleId: Number(scheduleId.toString())
+      mrHash: queueInfo.mrHash,
+      scheduleId: queueInfo.scheduleId,
+      queueNumber: queueInfo.queueNumber
     };
   } catch (error) {
-    console.error("Error getting queue info:", error);
-    return {
-      isRegistered: false,
-      queueNumber: 0,
-      scheduleId: 0
-    };
+    console.error('Error getting queue info:', error);
+    throw error;
   }
 };
 

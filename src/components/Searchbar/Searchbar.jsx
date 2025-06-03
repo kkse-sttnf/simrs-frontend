@@ -65,7 +65,8 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
         return;
       }
   
-      const cid = await contract.lookup(searchQuery);
+      // The contract returns a tuple (nik, cid, mrHash)
+      const [nik, cid, mrHash] = await contract.lookup(searchQuery);
       console.log("CID dari blockchain:", cid);
   
       if (!cid || cid === "" || !isValidCID(cid)) {
@@ -113,7 +114,7 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
   };
 
   const isValidCID = (cid) => {
-    return cid && (cid.startsWith("Qm") || cid.startsWith("baf")) && cid.length >= 46;
+    return cid && typeof cid === 'string' && (cid.startsWith("Qm") || cid.startsWith("baf")) && cid.length >= 46;
   };
 
   const handleKeyPress = (e) => {
