@@ -20,6 +20,7 @@ const ModalRawatJalan = ({
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [scheduleError, setScheduleError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [eventData, setEventData] = useState(null);
 
   // Konversi nomor hari ke teks
   const convertDayNumber = useCallback((dayNum) => {
@@ -60,6 +61,48 @@ const ModalRawatJalan = ({
     }
   }, [convertDayNumber]);
 
+  // Setup event listener untuk PatientEnqueued
+  useEffect(() => {
+    let contract;
+    let provider;
+
+    const setupEventListener = async () => {
+      try {
+        contract = await getOutpatientContract();
+        provider = contract.runner.provider;
+
+        // Listen for PatientEnqueued event
+        contract.on("PatientEnqueued", (mrHash, scheduleId, queueNumber, event) => {
+          console.log("Event PatientEnqueued diterima:", {
+            mrHash,
+            scheduleId: scheduleId.toString(),
+            queueNumber: queueNumber.toString(),
+            transactionHash: event.transactionHash
+          });
+          
+          setEventData({
+            mrHash,
+            scheduleId: scheduleId.toString(),
+            queueNumber: queueNumber.toString(),
+            transactionHash: event.transactionHash
+          });
+        });
+      } catch (error) {
+        console.error("Gagal setup event listener:", error);
+      }
+    };
+
+    if (show) {
+      setupEventListener();
+    }
+
+    return () => {
+      if (contract && provider) {
+        contract.removeAllListeners("PatientEnqueued");
+      }
+    };
+  }, [show]);
+
   // Ambil jadwal saat dokter dipilih
   useEffect(() => {
     if (selectedDoctor?.id) {
@@ -93,6 +136,7 @@ const ModalRawatJalan = ({
     }
 
     setIsSubmitting(true);
+    setEventData(null);
 
     try {
       const selectedScheduleData = doctorSchedules.find(
@@ -137,33 +181,76 @@ const ModalRawatJalan = ({
       }
 
       const tx = await enqueuePatient(mrHash, scheduleId);
-      const receipt = await tx.wait();
       
-      // Dapatkan nomor antrian terbaru
-      const newQueueNumber = await getQueueNumber(mrHash);
+      // Menampilkan loading dengan informasi transaksi
+      Swal.fire({
+        title: "Memproses Pendaftaran",
+        html: `
+          <div>
+            <p>Transaksi sedang diproses di blockchain...</p>
+            <small>TX Hash: ${tx.hash.slice(0, 10)}...</small>
+          </div>
+        `,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      // Tunggu event PatientEnqueued atau timeout
+      const waitForEvent = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Timeout menunggu konfirmasi dari blockchain"));
+        }, 60000); // Timeout 60 detik
+
+        const checkEvent = () => {
+          if (eventData) {
+            clearTimeout(timeout);
+            resolve(eventData);
+          } else {
+            setTimeout(checkEvent, 500);
+          }
+        };
+
+        checkEvent();
+      });
+
+      const eventResult = await waitForEvent;
       
+      // Format data untuk ditampilkan
+      const formattedSchedule = convertDayNumber(parseInt(eventResult.scheduleId));
+      const formattedQueueNumber = eventResult.queueNumber;
+
+      // Tampilkan hasil pendaftaran
+      Swal.fire({
+        title: "Pendaftaran Berhasil!",
+        html: `
+          <div>
+            <p>Event <strong>PatientEnqueued</strong> diterima:</p>
+            <ul>
+              <li><strong>MR Hash:</strong> ${eventResult.mrHash}</li>
+              <li><strong>Nomor Antrian:</strong> ${formattedQueueNumber}</li>
+              <li><strong>Jadwal:</strong> ${formattedSchedule}</li>
+            </ul>
+            <p><strong>Detail Pasien:</strong></p>
+            <ul>
+              <li>Nama: ${selectedPatient.namaLengkap}</li>
+              <li>NIK: ${selectedPatient.nik}</li>
+              <li>Dokter: ${selectedDoctor.namaDokter}</li>
+            </ul>
+            <small>TX Hash: ${eventResult.transactionHash.slice(0, 10)}...</small>
+          </div>
+        `,
+        icon: "success"
+      });
+
       if (onSave) {
         onSave({
           patient: selectedPatient,
           doctor: selectedDoctor,
           schedule: selectedSchedule,
-          queueNumber: newQueueNumber.toString()
+          queueNumber: formattedQueueNumber,
+          transactionHash: eventResult.transactionHash
         });
       }
-
-      Swal.fire({
-        title: "Pendaftaran Berhasil!",
-        html: `
-          <div>
-            <p><strong>Nomor Antrian:</strong> ${newQueueNumber}</p>
-            <p><strong>Nama Pasien:</strong> ${selectedPatient.namaLengkap}</p>
-            <p><strong>Dokter:</strong> ${selectedDoctor.namaDokter}</p>
-            <p><strong>Jadwal:</strong> ${selectedSchedule}</p>
-            <small>TX Hash: ${receipt.transactionHash.slice(0, 10)}...</small>
-          </div>
-        `,
-        icon: "success"
-      });
 
       handleClose();
     } catch (error) {
@@ -174,7 +261,9 @@ const ModalRawatJalan = ({
         errorMsg = "Transaksi dibatalkan oleh pengguna";
       } else if (error.reason) {
         errorMsg = error.reason.replace('execution reverted: ', '');
-      } else if (error.message) {
+      } else if (error.message.includes("Timeout")) {
+        errorMsg = "Transaksi berhasil dikirim tetapi timeout menunggu konfirmasi. Silakan cek blockchain explorer.";
+      } else {
         errorMsg = error.message;
       }
 
