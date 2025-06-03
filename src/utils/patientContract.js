@@ -1,11 +1,12 @@
 import { ethers } from 'ethers';
 
-const contractAddress = "0x134D41f5C53340f8705A5a5e430b5a867704f502";
-const contractAbi = [
-    'event PatientRegistered(string cid, string nik, string mrHash)',
-    'function lookup(string query) view returns (string)',
-    'function savePatientData(string nik, string cid)'
-];
+const contractAddress = "0x4793F707AD4956A267a61c38Ff18C65bC7Eb0CD1";
+const contractAbi = 
+[
+  'event PatientRegistered(string cid, string nik, string mrHash)',
+  'function lookup(string query) view returns ((string nik, string cid, string mrHash))',
+  'function savePatientData(string nik, string cid)'
+]
 
 let contractInstance = null;
 
