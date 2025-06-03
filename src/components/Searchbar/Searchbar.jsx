@@ -8,8 +8,9 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const [lastSearchedQuery, setLastSearchedQuery] = useState("");
 
-  const showPopup = (icon, title, text) => {
+  const showAlert = (icon, title, text) => {
     return Swal.fire({
       icon,
       title,
@@ -21,14 +22,35 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
     });
   };
 
+  const showErrorAlert = (error) => {
+    let title = "Error";
+    let message = "Terjadi kesalahan";
+
+    if (error.message.includes("tidak ditemukan")) {
+      title = "Data Tidak Ditemukan";
+      message = "Data pasien tidak ditemukan. Pastikan NIK/NRM benar.";
+    } else if (error.message.includes("MetaMask")) {
+      title = "Wallet Error";
+      message = "Silakan hubungkan wallet terlebih dahulu";
+    } else if (error.message.includes("IPFS")) {
+      title = "Data Error";
+      message = "Gagal memuat data pasien dari penyimpanan";
+    } else if (error.message.includes("input")) {
+      title = "Input Invalid";
+      message = error.message;
+    }
+
+    return showAlert("error", title, message);
+  };
+
   const connectWallet = async () => {
     try {
       await getContract();
       setIsWalletConnected(true);
-      await showPopup("success", "Wallet Terhubung", "Anda sekarang dapat melakukan pencarian pasien");
+      await showAlert("success", "Wallet Terhubung", "Anda sekarang dapat melakukan pencarian pasien");
     } catch (error) {
       console.error("Wallet connection error:", error);
-      await showPopup("error", "Koneksi Gagal", error.message || "Gagal menghubungkan wallet");
+      await showErrorAlert(error);
     }
   };
 
@@ -40,79 +62,70 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
       return response.data;
     } catch (error) {
       console.error("Error fetching from IPFS:", error);
-      throw new Error("Gagal memuat data dari IPFS");
+      throw new Error("IPFS Error: Gagal memuat data dari IPFS");
+    }
+  };
+
+  const validateInput = (input) => {
+    const nikRegex = /^\d{16}$/;
+    const nrmRegex = /^\d{10}$/;
+    
+    if (!input.trim()) {
+      throw new Error("Silakan masukkan NIK atau Nomor Rekam Medis");
+    }
+    
+    if (!nikRegex.test(input) && !nrmRegex.test(input)) {
+      throw new Error("NIK harus 16 digit atau NRM 10 digit angka");
     }
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      await showPopup("warning", "Input Kosong", "Silakan masukkan NIK atau Nomor Rekam Medis");
-      return;
-    }
-  
-    setLoading(true);
-    onSearchStatus({
-      loading: true,
-      error: null,
-      success: false
-    });
-  
+    if (lastSearchedQuery === searchQuery) return;
+
     try {
-      const contract = await getContract();
+      validateInput(searchQuery);
       
-      if (!isValidInput(searchQuery)) {
-        await showPopup("error", "Format Invalid", "NIK harus 16 digit atau NRM 10 digit angka");
-        return;
+      setLoading(true);
+      setLastSearchedQuery(searchQuery);
+      onSearchStatus({
+        loading: true,
+        error: null,
+        success: false
+      });
+
+      const contract = await getContract();
+      const [ cid ] = await contract.lookup(searchQuery);
+      
+      if (!isValidCID(cid)) {
+        throw new Error("Data tidak ditemukan: CID tidak valid");
       }
-  
-      // The contract returns a tuple (nik, cid, mrHash)
-      const [nik, cid, mrHash] = await contract.lookup(searchQuery);
-      console.log("CID dari blockchain:", cid);
-  
-      if (!cid || cid === "" || !isValidCID(cid)) {
-        await showPopup("error", "Data Tidak Ditemukan", "Data pasien tidak ditemukan (CID tidak valid)");
-        return;
-      }
-  
+
       const patientData = await fetchPatientData(cid);
-      console.log("Data dari IPFS:", patientData);
-  
+      
       onSelectPatient(patientData);
       onSearchStatus({
         loading: false,
         error: null,
         success: true
       });
-  
+      
+      await showAlert("success", "Berhasil", "Data pasien berhasil ditemukan");
+
     } catch (error) {
       console.error("Search error:", error);
       
-      let errorMessage = "Terjadi kesalahan dalam pencarian";
-      if (error.message.includes("tidak ditemukan")) {
-        errorMessage = "Data pasien tidak ditemukan. Pastikan NIK/NRM benar.";
-      } else if (error.message.includes("MetaMask")) {
-        errorMessage = "Silakan hubungkan wallet terlebih dahulu";
-        setIsWalletConnected(false);
-      }
-
       onSearchStatus({
         loading: false,
-        error: errorMessage,
+        error: error.message,
         success: false
       });
-  
-      await showPopup("error", "Pencarian Gagal", errorMessage);
+
+      await showErrorAlert(error);
     } finally {
       setLoading(false);
     }
   };
   
-  const isValidInput = (input) => {
-    const nikRegex = /^\d{16}$/;
-    const nrmRegex = /^\d{10}$/;
-    return nikRegex.test(input) || nrmRegex.test(input);
-  };
-
   const isValidCID = (cid) => {
     return cid && typeof cid === 'string' && (cid.startsWith("Qm") || cid.startsWith("baf")) && cid.length >= 46;
   };
@@ -152,7 +165,7 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
                 <Button
                   variant="primary"
                   onClick={handleSearch}
-                  disabled={loading}
+                  disabled={loading || searchQuery === lastSearchedQuery}
                   className="btn-lg"
                 >
                   {loading ? (
