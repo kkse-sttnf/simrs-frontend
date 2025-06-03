@@ -1,5 +1,5 @@
 import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from "react-bootstrap";
-import { getContract } from "../../utils/outpatientContract";
+import { getContract as getOutpatientContract } from "../../utils/outpatientContract";
 import Swal from "sweetalert2";
 import { useState, useEffect } from "react";
 
@@ -10,23 +10,28 @@ const FormRawatJalan = ({ selectedPasien }) => {
 
   useEffect(() => {
     const loadQueueData = async () => {
-      if (!selectedPasien?.NIK) {
+      if (!selectedPasien?.mrHash) {
         setQueueInfo(null);
         return;
       }
 
       setLoading(true);
       try {
-        // For real-time validation, we could call getQueueInfo again
-        // But here we use the data passed from Search component
+        const outpatientContract = await getOutpatientContract();
+        const info = await outpatientContract.getQueueInfo(selectedPasien.mrHash);
+        
         setQueueInfo({
           mrHash: selectedPasien.mrHash,
-          queueNumber: selectedPasien.queueNumber,
-          scheduleId: selectedPasien.scheduleId
+          queueNumber: info.queueNumber.toString(),
+          scheduleId: info.scheduleId.toString()
         });
       } catch (error) {
-        console.error("Error loading queue:", error);
-        Swal.fire("Error", "Gagal memuat detail antrian", "error");
+        console.error("Error memuat antrian:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Gagal memuat detail antrian terbaru"
+        });
       } finally {
         setLoading(false);
       }
@@ -36,9 +41,13 @@ const FormRawatJalan = ({ selectedPasien }) => {
   }, [selectedPasien]);
 
   const handleDequeue = async () => {
+    if (!selectedPasien?.mrHash) return;
+
     const confirmation = await Swal.fire({
       title: "Konfirmasi",
-      text: `Yakin ingin menghapus antrian pasien ${selectedPasien.NIK}?`,
+      html: `Yakin ingin menghapus antrian pasien:<br>
+        <b>${selectedPasien.namaPasien}</b><br>
+        NIK: ${selectedPasien.NIK}`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Ya, Hapus",
@@ -49,18 +58,36 @@ const FormRawatJalan = ({ selectedPasien }) => {
 
     setDequeueLoading(true);
     try {
-      const contract = await getContract();
-      const tx = await contract.dequeue(selectedPasien.NIK);
+      const contract = await getOutpatientContract();
+      const tx = await contract.dequeue(selectedPasien.mrHash);
       await tx.wait();
       
-      Swal.fire("Berhasil!", "Pasien telah dihapus dari antrian", "success");
-      setQueueInfo(null); // Clear the form
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        html: `Pasien <b>${selectedPasien.namaPasien}</b> telah dihapus dari antrian<br>
+          <small>TX: ${tx.hash.slice(0, 10)}...</small>`
+      });
+      
+      setQueueInfo(null);
     } catch (error) {
-      console.error("Dequeue error:", error);
-      Swal.fire("Gagal", error.reason || "Gagal menghapus antrian", "error");
+      console.error("Error menghapus antrian:", error);
+      let errorMsg = error.reason?.replace('execution reverted: ', '') || "Gagal menghapus antrian";
+      
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: errorMsg
+      });
     } finally {
       setDequeueLoading(false);
     }
+  };
+
+  // Fungsi untuk mengkonversi ID jadwal ke hari
+  const convertScheduleIdToDay = (id) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return days[id] || `Hari-${id}`;
   };
 
   return (
@@ -79,46 +106,56 @@ const FormRawatJalan = ({ selectedPasien }) => {
           {loading ? (
             <div className="text-center py-4">
               <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Memuat data antrian...</p>
             </div>
           ) : queueInfo ? (
             <>
+              <Form.Group className="mb-3">
+                <Form.Label>Nama Pasien</Form.Label>
+                <Form.Control 
+                  readOnly 
+                  value={selectedPasien.namaPasien} 
+                  className="fw-bold"
+                />
+              </Form.Group>
+
               <Form.Group className="mb-3">
                 <Form.Label>NIK Pasien</Form.Label>
                 <Form.Control 
                   readOnly 
                   value={selectedPasien.NIK} 
-                  className="fw-bold"
                 />
               </Form.Group>
 
               <Row className="mb-4">
-                <Col md={4}>
+                <Col md={6}>
                   <Form.Group>
                     <Form.Label>Medical Record Hash</Form.Label>
                     <Form.Control 
                       readOnly 
                       value={queueInfo.mrHash} 
-                      className="font-monospace"
+                      className="font-monospace small"
                     />
                   </Form.Group>
                 </Col>
                 
-                <Col md={4}>
+                <Col md={3}>
                   <Form.Group>
                     <Form.Label>Nomor Antrian</Form.Label>
                     <Form.Control 
                       readOnly 
                       value={queueInfo.queueNumber} 
+                      className="text-center fw-bold"
                     />
                   </Form.Group>
                 </Col>
                 
-                <Col md={4}>
+                <Col md={3}>
                   <Form.Group>
-                    <Form.Label>ID Jadwal</Form.Label>
+                    <Form.Label>Hari Praktek</Form.Label>
                     <Form.Control 
                       readOnly 
-                      value={queueInfo.scheduleId} 
+                      value={convertScheduleIdToDay(queueInfo.scheduleId)} 
                     />
                   </Form.Group>
                 </Col>
@@ -142,8 +179,8 @@ const FormRawatJalan = ({ selectedPasien }) => {
           ) : (
             <div className="text-center text-muted py-4">
               {selectedPasien 
-                ? "Tidak ditemukan data antrian" 
-                : "Hasil pencarian akan muncul di sini"}
+                ? "Tidak ditemukan data antrian untuk pasien ini" 
+                : "Silakan cari pasien terlebih dahulu"}
             </div>
           )}
         </Card.Body>

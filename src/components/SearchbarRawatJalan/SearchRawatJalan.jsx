@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Form, Button, InputGroup, Container, Alert, Spinner, Row, Col } from "react-bootstrap";
 import Swal from "sweetalert2";
-import { getContract as getOutpatientContract} from "../../utils/outpatientContract";
-import { getContract as getPatientContract  } from "../../utils/patientContract";
+import { getContract as getOutpatientContract } from "../../utils/outpatientContract";
+import { getContract as getPatientContract } from "../../utils/patientContract";
+import { ethers } from "ethers";
 
 const SearchRawatJalan = ({ onSelectPasien }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,32 +24,42 @@ const SearchRawatJalan = ({ onSelectPasien }) => {
     setError(null);
 
     try {
+      // 1. Dapatkan data pasien dari patientContract
       const patientContract = await getPatientContract();
-      const [nik,cid,mrHash] = await patientContract.lookup(searchQuery);
-      const outPatienContract = await getOutpatientContract();
-      const [mrHash2, scheduleId, queueNumber] = await getOutpatientContract.getQueueInfo;
+      const patientData = await patientContract.lookup(searchQuery);
       
-      // Validate queue exists
-      if (lookupData.queueNumber() === "0") {
+      // 2. Generate mrHash dari NIK
+      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(searchQuery));
+      
+      // 3. Dapatkan info antrian dari outpatientContract
+      const outpatientContract = await getOutpatientContract();
+      const queueInfo = await outpatientContract.getQueueInfo(mrHash);
+      
+      // Validasi apakah pasien memiliki antrian aktif
+      if (queueInfo.queueNumber.toString() === "0") {
         throw new Error("Pasien tidak memiliki antrian aktif");
       }
 
-      // Format patient data
-      const patientData = {
+      // Format data pasien untuk ditampilkan
+      const formattedPatient = {
         NIK: searchQuery,
-        mrHash : lookupData.mrHash,
-        queueNumber: lookupData.queueNumber,
-        scheduleId: lookupData.scheduleId,
-        namaPasien: `Pasien ${searchQuery}` // In production, get from contract
+        mrHash: mrHash,
+        queueNumber: queueInfo.queueNumber.toString(),
+        scheduleId: queueInfo.scheduleId.toString(),
+        namaPasien: patientData.namaLengkap || `Pasien ${searchQuery}`
       };
 
-      onSelectPasien(patientData);
+      onSelectPasien(formattedPatient);
 
     } catch (err) {
-      console.error("Blockchain error:", err);
-      const errorMsg = err.reason?.includes("not in queue") 
-        ? "Pasien tidak memiliki antrian aktif" 
-        : err.message;
+      console.error("Error pencarian:", err);
+      let errorMsg = "Terjadi kesalahan saat mencari data pasien";
+      
+      if (err.reason) {
+        errorMsg = err.reason.replace('execution reverted: ', '');
+      } else if (err.message.includes("Pasien tidak memiliki")) {
+        errorMsg = err.message;
+      }
       
       setError(errorMsg);
       Swal.fire({
@@ -56,7 +67,7 @@ const SearchRawatJalan = ({ onSelectPasien }) => {
         title: "Gagal",
         text: errorMsg,
       });
-      onSelectPasien(null); // Clear form
+      onSelectPasien(null);
     } finally {
       setLoading(false);
     }
