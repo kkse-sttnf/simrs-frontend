@@ -1,4 +1,4 @@
-import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from "react-bootstrap";
+import { Container, Row, Col, Card, Form, Button, Spinner } from "react-bootstrap";
 import { getContract as getOutpatientContract } from "../../utils/outpatientContract";
 import Swal from "sweetalert2";
 import { useState, useEffect } from "react";
@@ -95,11 +95,6 @@ const FormRawatJalan = ({ selectedPasien }) => {
       <Card className="shadow-sm border-primary">
         <Card.Header className="bg-primary text-white d-flex justify-content-between">
           <h5 className="mb-0">Detail Antrian</h5>
-          {queueInfo && (
-            <Badge bg="light" text="dark" pill>
-              Antrian #{queueInfo.queueNumber}
-            </Badge>
-          )}
         </Card.Header>
         
         <Card.Body>
@@ -110,15 +105,6 @@ const FormRawatJalan = ({ selectedPasien }) => {
             </div>
           ) : queueInfo ? (
             <>
-              <Form.Group className="mb-3">
-                <Form.Label>Nama Pasien</Form.Label>
-                <Form.Control 
-                  readOnly 
-                  value={selectedPasien.namaPasien} 
-                  className="fw-bold"
-                />
-              </Form.Group>
-
               <Form.Group className="mb-3">
                 <Form.Label>NIK Pasien</Form.Label>
                 <Form.Control 
