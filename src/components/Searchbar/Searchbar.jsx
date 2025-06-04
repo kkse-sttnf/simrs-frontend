@@ -26,7 +26,7 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
     let title = "Error";
     let message = "Terjadi kesalahan";
 
-    if (error.message.includes("tidak ditemukan")) {
+    if (error.message.includes("tidak ditemukan") || error.message.includes("invalid CID")) {
       title = "Data Tidak Ditemukan";
       message = "Data pasien tidak ditemukan. Pastikan NIK/NRM benar.";
     } else if (error.message.includes("MetaMask")) {
@@ -94,13 +94,14 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
       });
 
       const contract = await getContract();
-      const [ cid ] = await contract.lookup(searchQuery);
+      // Perubahan disini - sesuaikan dengan return struct dari kontrak
+      const patientRecord = await contract.lookup(searchQuery);
       
-      if (!isValidCID(cid)) {
-        throw new Error("Data tidak ditemukan: CID tidak valid");
+      if (!isValidCID(patientRecord.cid)) {
+        throw new Error("invalid CID: Data tidak ditemukan");
       }
 
-      const patientData = await fetchPatientData(cid);
+      const patientData = await fetchPatientData(patientRecord.cid);
       
       onSelectPatient(patientData);
       onSearchStatus({
