@@ -60,7 +60,6 @@ const FormRawatJalan = ({ selectedPasien }) => {
     try {
       const contract = await getOutpatientContract();
       const tx = await contract.dequeue(selectedPasien.mrHash);
-      await tx.wait();
       
       Swal.fire({
         icon: "success",
