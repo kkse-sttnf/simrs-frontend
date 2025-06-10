@@ -1,81 +1,90 @@
-import { ethers } from 'ethers';
+  import { ethers } from 'ethers';
 
-const contractAddress = '0xD621CDd49B5E21b235e0E87bef92703adf901b4c';
-const contractAbi = [
-  'event PatientDequeued(string mrHash)',
-  'event PatientEnqueued(string mrHash, uint256 scheduleId, uint256 queueNumber)',
-  'function dequeue(string mrHash)',
-  'function enqueue(string mrHash, uint256 scheduleId)',
-  'function getQueueInfo(string mrHash) view returns ((string mrHash, uint256 scheduleId, uint256 queueNumber))',
-  'function mrHashToQueueNumber(string) view returns (uint256)',
-  'function mrHashToScheduleId(string) view returns (uint256)',
-  'function scheduleIdToCounter(uint256) view returns (uint256)'
-];
+  const CONTRACT_ADDRESS = '0xD621CDd49B5E21b235e0E87bef92703adf901b4c';
+  const CONTRACT_ABI = [
+    'event PatientDequeued(string mrHash)',
+    'event PatientEnqueued(string mrHash, uint256 scheduleId, uint256 queueNumber)',
+    'function dequeue(string mrHash)',
+    'function enqueue(string mrHash, uint256 scheduleId)',
+    'function getQueueInfo(string mrHash) view returns ((string mrHash, uint256 scheduleId, uint256 queueNumber))',
+    'function mrHashToQueueNumber(string) view returns (uint256)',
+    'function mrHashToScheduleId(string) view returns (uint256)',
+    'function scheduleIdToCounter(uint256) view returns (uint256)'
+  ];
 
-let contractInstance = null;
+  let contractInstance = null;
+  const activeListeners = new Map();
 
-export const getContract = async () => {
-  if (!window.ethereum) {
-    throw new Error('MetaMask is not installed');
-  }
-
-  if (contractInstance) {
+  export const getContract = async () => {
+    if (!window.ethereum) throw new Error('MetaMask not installed');
+    
+    if (!contractInstance) {
+      // PERBAIKAN: Inisialisasi provider dengan benar
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // Set polling interval setelah provider dibuat
+      provider.pollingInterval = 1000000;
+      
+      const signer = await provider.getSigner();
+      contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    }
+    
     return contractInstance;
-  }
+  };
 
-  try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    contractInstance = new ethers.Contract(contractAddress, contractAbi, signer);
-    return contractInstance;
-  } catch (error) {
-    console.error('Contract initialization error:', error);
-    throw new Error('Failed to connect to contract. Please ensure you are connected to the correct network.');
-  }
-};
+  export const setupEventListener = async (callback) => {
+    try {
+      const contract = await getContract();
+      const listenerId = Symbol('listener');
+      
+      const handler = (...args) => callback(...args);
+      contract.on("PatientEnqueued", handler);
+      
+      activeListeners.set(listenerId, {
+        contract,
+        handler,
+        event: "PatientEnqueued"
+      });
+      
+      return () => {
+        if (activeListeners.has(listenerId)) {
+          const { contract, handler, event } = activeListeners.get(listenerId);
+          contract.off(event, handler);
+          activeListeners.delete(listenerId);
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up listener:', error);
+      throw error;
+    }
+  };
 
-export const resetContract = () => {
-  contractInstance = null;
-};
+  export const cleanupAllListeners = async () => {
+    for (const [{ contract, handler, event }] of activeListeners) {
+      contract.off(event, handler);
+    }
+    activeListeners.clear();
+  };
 
-// Fungsi untuk mendaftarkan pasien
-export const enqueuePatient = async (mrHash, scheduleId) => {
-  try {
+  export const enqueuePatient = async (mrHash, scheduleId) => {
     const contract = await getContract();
-    const tx = await contract.enqueue(mrHash, scheduleId);
-    return tx;
-  } catch (error) {
-    console.error('Error enqueueing patient:', error);
-    throw error;
-  }
-};
+    return await contract.enqueue(mrHash, scheduleId);
+  };
 
-// Fungsi untuk mendapatkan nomor antrian
-export const getQueueNumber = async (mrHash) => {
-  try {
+  export const getQueueNumber = async (mrHash) => {
     const contract = await getContract();
     const queueNumber = await contract.mrHashToQueueNumber(mrHash);
-    return queueNumber;
-  } catch (error) {
-    console.error('Error getting queue number:', error);
-    throw error;
-  }
-};
+    return Number(queueNumber);
+  };
 
-// Fungsi untuk mendapatkan info antrian
-export const getQueueInfo = async (mrHash) => {
-  try {
+  export const getQueueInfo = async (mrHash) => {
     const contract = await getContract();
-    const queueInfo = await contract.getQueueInfo(mrHash);
+    const info = await contract.getQueueInfo(mrHash);
     return {
-      mrHash: queueInfo.mrHash,
-      scheduleId: queueInfo.scheduleId,
-      queueNumber: queueInfo.queueNumber
+      mrHash: info.mrHash,
+      scheduleId: Number(info.scheduleId),
+      queueNumber: Number(info.queueNumber)
     };
-  } catch (error) {
-    console.error('Error getting queue info:', error);
-    throw error;
-  }
-};
+  };
 
-export { contractAbi };
+  export { CONTRACT_ABI };
