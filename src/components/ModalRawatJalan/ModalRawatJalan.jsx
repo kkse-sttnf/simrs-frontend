@@ -182,11 +182,11 @@ const ModalRawatJalan = ({
       // Set timeout for event
       setTimeout(() => {
         if (!eventReceived) {
-          contract.off("PatientEnqueued", eventHandler);
+          contract.on("PatientEnqueued", eventHandler);
           Swal.fire({
             title: "Transaksi Dikirim",
             text: "Transaksi berhasil",
-            icon: "info"
+            icon: "success"
           });
           handleClose();
         }
