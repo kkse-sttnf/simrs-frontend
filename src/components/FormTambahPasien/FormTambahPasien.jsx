@@ -3,6 +3,9 @@ import { Container, Card, Button, Form, Row, Col } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { getPinata } from "../../utils/pinataProvider";
+import { getContract as getPatientContract } from "../../utils/patientContract";
+import { uuidV4, randomBytes } from "ethers";
 
 const FormTambahPasien = () => {
   const navigate = useNavigate();
@@ -65,25 +68,17 @@ const FormTambahPasien = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await fetch("http://localhost:3001/pasien", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(formData),
-          });
-
-          if (response.ok) {
-            Swal.fire({
-              title: "Berhasil!",
-              text: "Pasien berhasil ditambahkan.",
-              icon: "success",
-              timer: 1500,
-              showConfirmButton: false,
-            }).then(() => {
-              navigate("/detail-pasien");
-            });
-
+          const jsonFormData = formData;
+          const pinata = getPinata();
+          const dataName = uuidV4(randomBytes(16)) + ".json";
+          const upload = await pinata.upload.public.json(jsonFormData).name(dataName);
+          const cid = upload.cid;
+          const nik = formData.nik
+          const patientContract = await getPatientContract();
+          patientContract.savePatientData(nik, cid);
+          patientContract.on("PatientRegistered", (evCid, evNik, evMrHash) => {
+            console.log("success: ", evCid, evNik, evMrHash)
+            navigate("/DetailPasien");
             setFormData({
               namaLengkap: "",
               noTelpRumah: "",
@@ -120,9 +115,7 @@ const FormTambahPasien = () => {
               provinsiDomisili: "",
               negaraDomisili: "",
             });
-          } else {
-            Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
-          }
+          })
         } catch (error) {
           console.error("Error:", error);
           Swal.fire("Error", "Terjadi kesalahan saat menyimpan data.", "error");

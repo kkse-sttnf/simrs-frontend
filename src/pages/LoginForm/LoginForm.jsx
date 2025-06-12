@@ -1,55 +1,83 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { BrowserProvider } from "ethers";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa"; // Tambahkan FaEye dan FaEyeSlash
 import SecureImage from "../../assets/images/Secure-login.png";
+import Swal from "sweetalert2";
 
 const LoginForm = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // State untuk toggle visibility
   const navigate = useNavigate();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async () => {
+    setIsConnecting(true);
+    setError(null);
 
     try {
-      // Mengambil data pengguna dari json-server
-      const response = await fetch("http://localhost:3001/users");
-      if (!response.ok) throw new Error("Gagal mengambil data pengguna!");
-
-      const users = await response.json();
-
-      // Cari pengguna yang sesuai
-      const user = users.find(
-        (u) => u.username === username && u.password === password
-      );
-
-      if (user) {
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("username", user.username);
-        alert("Login Berhasil!");
-        navigate("/DetailPasien");
-      } else {
-        alert("Username atau Password salah!");
+      if (!window.ethereum) {
+        throw new Error(
+          "MetaMask tidak terdeteksi. Silakan install ekstensi MetaMask terlebih dahulu."
+        );
       }
-    } catch (error) {
-      console.error("Kesalahan:", error);
-      alert("Terjadi kesalahan saat login. Silakan coba lagi.");
+
+      const provider = new BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+
+      if (!accounts || accounts.length === 0) {
+        throw new Error(
+          "Tidak bisa mengakses akun. Pastikan Anda telah login ke MetaMask."
+        );
+      }
+
+      // Store authentication data
+      sessionStorage.setItem("walletAddress", accounts[0]);
+      sessionStorage.setItem("isLoggedIn", "true");
+
+      await Swal.fire({
+        title: "Berhasil Login!",
+        text: `Anda terhubung dengan alamat: ${accounts[0].slice(
+          0,
+          6
+        )}...${accounts[0].slice(-4)}`,
+        icon: "success",
+        confirmButtonText: "Lanjutkan",
+      });
+
+      // Redirect to originally requested page or default
+      const redirectPath =
+        sessionStorage.getItem("redirectPath") || "/DetailPasien";
+      console.log("Redirecting to:", redirectPath); // Debugging
+      navigate(redirectPath);
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.message);
+
+      await Swal.fire({
+        title: "Gagal Login",
+        text: err.message,
+        icon: "error",
+        confirmButtonText: "Mengerti",
+      });
+    } finally {
+      setIsConnecting(false);
     }
   };
 
   useEffect(() => {
-    // Cek apakah pengguna sudah login
-    const isLoggedIn = sessionStorage.getItem("isLoggedIn");
-    if (isLoggedIn === "true") {
-      navigate("/DetailPasien");
+    if (
+      sessionStorage.getItem("isLoggedIn") &&
+      sessionStorage.getItem("walletAddress")
+    ) {
+      const redirectPath =
+        sessionStorage.getItem("redirectPath") || "/DetailPasien";
+      navigate(redirectPath);
     }
   }, [navigate]);
 
   return (
     <div className="container-fluid vh-100 vw-100 d-flex p-0">
-      {/* Bagian Kiri - Gambar & Text */}
+      {/* Left Side - Image & Text */}
       <div className="col-md-6 bg-primary text-white d-flex flex-column align-items-center justify-content-center text-center p-5">
         <h1 className="fw-bold mb-4">
           Akses informasi dan layanan kesehatan dengan lebih mudah!
@@ -62,67 +90,59 @@ const LoginForm = () => {
         />
       </div>
 
-      {/* Bagian Kanan - Form Login */}
+      {/* Right Side - Login Form */}
       <div className="col-md-6 d-flex flex-column align-items-center justify-content-center p-5">
-        <form
-          onSubmit={handleLogin}
-          className="w-100"
-          style={{ maxWidth: "400px" }}
+        <div className="text-center mb-5">
+          <h2 className="fw-bold mb-3">Login dengan MetaMask</h2>
+          <p className="text-muted">
+            Sambungkan wallet Anda untuk mengakses sistem
+          </p>
+        </div>
+
+        <button
+          className="btn btn-primary btn-lg px-5 py-3"
+          onClick={handleLogin}
+          disabled={isConnecting}
         >
-          <h1 className="text-center fw-bold mb-4">Login</h1>
+          {isConnecting ? (
+            <>
+              <span
+                className="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Menghubungkan...
+            </>
+          ) : (
+            <>
+              <i className="fab fa-ethereum me-2"></i>
+              Connect MetaMask
+            </>
+          )}
+        </button>
 
-          <div className="mb-3 position-relative">
-            <label htmlFor="Username" className="form-label fw-bold">
-              Username
-            </label>
-            <div className="input-group">
-              <input
-                type="text"
-                id="Username"
-                className="form-control rounded-pill"
-                placeholder="Masukan Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-              <span className="input-group-text bg-transparent border-0 position-absolute end-0 me-3 d-flex align-items-center top-50 translate-middle-y">
-                <FaUser />
-              </span>
-            </div>
-          </div>
-
-          <div className="mb-3 position-relative">
-            <label htmlFor="Password" className="form-label fw-bold">
-              Password
-            </label>
-            <div className="input-group">
-              <input
-                type={showPassword ? "text" : "password"} // Toggle tipe input
-                id="Password"
-                className="form-control rounded-pill"
-                placeholder="Masukan Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className="input-group-text bg-transparent border-0 position-absolute end-0 me-3 d-flex align-items-center top-50 translate-middle-y"
-                onClick={() => setShowPassword(!showPassword)} // Toggle visibility
-                style={{ cursor: "pointer" }}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />} {/* Toggle ikon mata */}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary w-100 rounded-pill fw-bold"
+        {error && (
+          <div
+            className="alert alert-danger mt-4"
+            style={{ maxWidth: "400px" }}
           >
-            Login
-          </button>
-        </form>
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 text-center text-muted">
+          <small>
+            Belum punya MetaMask?{" "}
+            <a
+              href="https://metamask.io/download.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-decoration-none"
+            >
+              Download di sini
+            </a>
+          </small>
+        </div>
       </div>
     </div>
   );

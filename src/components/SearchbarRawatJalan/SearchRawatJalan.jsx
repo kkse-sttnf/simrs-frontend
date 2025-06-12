@@ -1,85 +1,115 @@
 import React, { useState } from "react";
-import { Form, Col, Button, InputGroup, Row, Container } from "react-bootstrap";
+import { Form, Button, InputGroup, Container, Alert, Spinner, Row, Col } from "react-bootstrap";
 import Swal from "sweetalert2";
+import { getContract as getOutpatientContract } from "../../utils/outpatientContract";
+import { getContract as getPatientContract } from "../../utils/patientContract";
+import { ethers } from "ethers";
 
 const SearchRawatJalan = ({ onSelectPasien }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       Swal.fire({
         icon: "warning",
         title: "Input Kosong",
-        text: "Silakan masukkan NIK Pasien.",
+        text: "Silakan masukkan NIK Pasien yang valid.",
       });
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
-      // Fetch data dari endpoint rawatJalan
-      const response = await fetch("http://localhost:3001/rawatJalan");
-      if (!response.ok) {
-        throw new Error("Gagal mengambil data dari server");
+      // 1. Dapatkan data pasien dari patientContract
+      const patientContract = await getPatientContract();
+      const patientData = await patientContract.lookup(searchQuery);
+      
+      // 2. Generate mrHash dari NIK
+      const mrHash = ethers.keccak256(ethers.toUtf8Bytes(searchQuery));
+      
+      // 3. Dapatkan info antrian dari outpatientContract
+      const outpatientContract = await getOutpatientContract();
+      const queueInfo = await outpatientContract.getQueueInfo(mrHash);
+      
+      // Validasi apakah pasien memiliki antrian aktif
+      if (queueInfo.queueNumber.toString() === "0") {
+        throw new Error("Pasien tidak memiliki antrian aktif");
       }
 
-      const data = await response.json();
-      const found = data.find((item) => item.NIK === searchQuery);
+      // Format data pasien untuk ditampilkan
+      const formattedPatient = {
+        NIK: searchQuery,
+        mrHash: mrHash,
+        queueNumber: queueInfo.queueNumber.toString(),
+        scheduleId: queueInfo.scheduleId.toString(),
+        namaPasien: patientData.namaLengkap || `Pasien ${searchQuery}`
+      };
 
-      if (found) {
-        if (onSelectPasien && typeof onSelectPasien === "function") {
-          onSelectPasien(found); // Kirim data ke FormRawatJalan
-        } else {
-          console.error("onSelectPasien is not a function");
-        }
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Data Tidak Ditemukan",
-          text: "Data pasien dengan NIK tersebut tidak ditemukan.",
-          confirmButtonText: "OK",
-        });
+      onSelectPasien(formattedPatient);
+
+    } catch (err) {
+      console.error("Error pencarian:", err);
+      let errorMsg = "Terjadi kesalahan saat mencari data pasien";
+      
+      if (err.reason) {
+        errorMsg = err.reason.replace('execution reverted: ', '');
+      } else if (err.message.includes("Pasien tidak memiliki")) {
+        errorMsg = err.message;
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
+      
+      setError(errorMsg);
       Swal.fire({
         icon: "error",
-        title: "Terjadi Kesalahan",
-        text: "Gagal mengambil data dari server.",
+        title: "Gagal",
+        text: errorMsg,
       });
+      onSelectPasien(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
-    <Container>
+    <Container className="mb-4">
       <Row className="justify-content-center">
-        <Col md={12} className="mb-3">
-          <Form.Group>
-            <InputGroup>
-              <Form.Control
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Masukkan NIK Pasien"
-                disabled={loading}
-                className="form-control-lg"
-              />
-              <Button variant="primary" onClick={handleSearch} disabled={loading} className="btn-lg" >
-                {loading ? "Mencari..." : "Search"}
-              </Button>
-            </InputGroup>
-          </Form.Group>
+        <Col md={8}>
+          <h4 className="text-center mb-3">Pencarian Pasien Rawat Jalan</h4>
+          
+          {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
+
+          <InputGroup>
+            <Form.Control
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Masukkan NIK pasien"
+              disabled={loading}
+            />
+            <Button 
+              variant="primary" 
+              onClick={handleSearch}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Mencari...
+                </>
+              ) : "Cari"}
+            </Button>
+          </InputGroup>
+          <Form.Text className="text-muted">
+            Cari berdasarkan NIK untuk melihat antrian aktif
+          </Form.Text>
         </Col>
       </Row>
     </Container>

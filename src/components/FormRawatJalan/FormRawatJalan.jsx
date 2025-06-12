@@ -1,101 +1,173 @@
-import React from "react";
-import { Container, Row, Col, Card, Form } from "react-bootstrap";
+import { Container, Row, Col, Card, Form, Button, Spinner } from "react-bootstrap";
+import { getContract as getOutpatientContract } from "../../utils/outpatientContract";
+import Swal from "sweetalert2";
+import { useState, useEffect } from "react";
 
 const FormRawatJalan = ({ selectedPasien }) => {
+  const [queueInfo, setQueueInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [dequeueLoading, setDequeueLoading] = useState(false);
+
+  useEffect(() => {
+    const loadQueueData = async () => {
+      if (!selectedPasien?.mrHash) {
+        setQueueInfo(null);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const outpatientContract = await getOutpatientContract();
+        const info = await outpatientContract.getQueueInfo(selectedPasien.mrHash);
+        
+        setQueueInfo({
+          mrHash: selectedPasien.mrHash,
+          queueNumber: info.queueNumber.toString(),
+          scheduleId: info.scheduleId.toString()
+        });
+      } catch (error) {
+        console.error("Error memuat antrian:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Gagal memuat detail antrian terbaru"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQueueData();
+  }, [selectedPasien]);
+
+  const handleDequeue = async () => {
+    if (!selectedPasien?.mrHash) return;
+
+    const confirmation = await Swal.fire({
+      title: "Konfirmasi",
+      html: `Yakin ingin menghapus antrian pasien:<br>
+        <b>${selectedPasien.namaPasien}</b><br>
+        NIK: ${selectedPasien.NIK}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal"
+    });
+
+    if (!confirmation.isConfirmed) return;
+
+    setDequeueLoading(true);
+    try {
+      const contract = await getOutpatientContract();
+      const tx = await contract.dequeue(selectedPasien.mrHash);
+      
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        html: `Pasien <b>${selectedPasien.namaPasien}</b> telah dihapus dari antrian<br>
+          <small>TX: ${tx.hash.slice(0, 10)}...</small>`
+      });
+      
+      setQueueInfo(null);
+    } catch (error) {
+      console.error("Error menghapus antrian:", error);
+      let errorMsg = error.reason?.replace('execution reverted: ', '') || "Gagal menghapus antrian";
+      
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: errorMsg
+      });
+    } finally {
+      setDequeueLoading(false);
+    }
+  };
+
+  // Fungsi untuk mengkonversi ID jadwal ke hari
+  const convertScheduleIdToDay = (id) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return days[id] || `Hari-${id}`;
+  };
+
   return (
-    <Container className="mt-4 mb-5">
-      <Card className="shadow">
-        <Card.Header className="bg-primary text-white">
-          <h4 className="mb-0">Form Rawat Jalan</h4>
+    <Container className="mb-5">
+      <Card className="shadow-sm border-primary">
+        <Card.Header className="bg-primary text-white d-flex justify-content-between">
+          <h5 className="mb-0">Detail Antrian</h5>
         </Card.Header>
+        
         <Card.Body>
-          <Form>
-            {/* Bagian Nama Pasien */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Nama Pasien</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.namaPasien || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>NIK</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.NIK || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+          {loading ? (
+            <div className="text-center py-4">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Memuat data antrian...</p>
+            </div>
+          ) : queueInfo ? (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Label>NIK Pasien</Form.Label>
+                <Form.Control 
+                  readOnly 
+                  value={selectedPasien.NIK} 
+                />
+              </Form.Group>
 
-            {/* Bagian Nama Dokter dan Spesialis */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Nama Dokter</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.namaDokter || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Spesialis</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.spesialis || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+              <Row className="mb-4">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Medical Record Hash</Form.Label>
+                    <Form.Control 
+                      readOnly 
+                      value={queueInfo.mrHash} 
+                      className="font-monospace small"
+                    />
+                  </Form.Group>
+                </Col>
+                
+                <Col md={3}>
+                  <Form.Group>
+                    <Form.Label>Nomor Antrian</Form.Label>
+                    <Form.Control 
+                      readOnly 
+                      value={queueInfo.queueNumber} 
+                      className="text-center fw-bold"
+                    />
+                  </Form.Group>
+                </Col>
+                
+                <Col md={3}>
+                  <Form.Group>
+                    <Form.Label>Hari Praktek</Form.Label>
+                    <Form.Control 
+                      readOnly 
+                      value={convertScheduleIdToDay(queueInfo.scheduleId)} 
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            {/* Bagian Nomor Praktek dan Jadwal Dokter */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Nomor Praktek</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.nomorPraktek || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Jadwal Dokter</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.jadwalDokter || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            {/* Bagian Ruang Praktek */}
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Ruang Praktek</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedPasien?.ruangPraktek || ""}
-                    readOnly
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
+              <div className="d-flex justify-content-end">
+                <Button
+                  variant="outline-danger"
+                  onClick={handleDequeue}
+                  disabled={dequeueLoading}
+                >
+                  {dequeueLoading ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Memproses...
+                    </>
+                  ) : "Hapus dari Antrian"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-muted py-4">
+              {selectedPasien 
+                ? "Tidak ditemukan data antrian untuk pasien ini" 
+                : "Silakan cari pasien terlebih dahulu"}
+            </div>
+          )}
         </Card.Body>
       </Card>
     </Container>

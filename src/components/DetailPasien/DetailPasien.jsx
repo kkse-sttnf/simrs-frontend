@@ -2,9 +2,17 @@ import React, { useEffect, useState } from "react";
 import { Container, Form, Row, Col, Button, Card } from "react-bootstrap";
 import { FaSave } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import ModalRawatJalan from "../ModalRawatJalan/ModalRawatJalan";
+import Swal from "sweetalert2";
 
-const DetailDataPasien = ({ selectedPatient }) => {
+
+const DetailDataPasien = ({
+  selectedPatient,
+  dokter,
+  loadingDokter,
+  errorDokter,
+  onShowModal,
+  searchStatus
+}) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     namaLengkap: "",
@@ -43,184 +51,158 @@ const DetailDataPasien = ({ selectedPatient }) => {
     negaraDomisili: "",
   });
 
-  const [dokter, setDokter] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-
-  // Ambil data dokter dari API
+  // Tampilkan popup error jika ada error
   useEffect(() => {
-    const fetchDokter = async () => {
-      try {
-        const response = await fetch("http://localhost:3001/dokter");
-        if (!response.ok) throw new Error("Gagal mengambil data dokter.");
-        const data = await response.json();
-        console.log("Data Dokter dari API:", data.dokter || data); // Debugging
-        if (data.dokter) {
-          setDokter(data.dokter); // Simpan data dokter ke state
-        } else if (Array.isArray(data)) {
-          setDokter(data); // Jika respons langsung berupa array
-        } else {
-          console.error("Data dokter tidak valid:", data);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    };
-  
-    fetchDokter();
-  }, []);
-  
-
-  // Fungsi untuk menyimpan data pendaftaran rawat jalan
-  const handleSaveRegistration = async (data) => {
-    try {
-      const response = await fetch("http://localhost:3001/rawatJalan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+    if (searchStatus.error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Pencarian Gagal',
+        text: searchStatus.error,
+        backdrop: false,
+        background: 'white'
       });
-      if (!response.ok) throw new Error("Gagal menyimpan data pendaftaran.");
-      alert("Pendaftaran berhasil disimpan!");
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Terjadi kesalahan saat menyimpan data.");
     }
-  };
+  }, [searchStatus.error]);
 
-  // Fungsi untuk mengonversi angka jenis kelamin ke teks
   const getJenisKelaminText = (value) => {
-    switch (value) {
-      case 0:
-        return "Tidak diketahui";
-      case 1:
-        return "Laki-laki";
-      case 2:
-        return "Perempuan";
-      case 3:
-        return "Tidak dapat ditentukan";
-      default:
-        return "Tidak valid";
+    const val = parseInt(value);
+    switch (val) {
+      case 0: return "Tidak diketahui";
+      case 1: return "Laki-laki";
+      case 2: return "Perempuan";
+      case 3: return "Tidak dapat ditentukan";
+      default: return `Tidak valid (${value})`;
     }
   };
 
   const getAgama = (value) => {
-    switch (value) {
-      case 0:
-        return "Tidak diketahui";
-      case 1:
-        return "Islam";
-      case 2:
-        return "Kristen (Protestan)";
-      case 3:
-        return "Katolik";
-      case 4:
-        return "Hindu";
-      case 5:
-        return "Budha";
-      case 6:
-        return "Konghucu";
-      case 7:
-        return "Penghayat";
-      default:
-        return "Tidak valid";
+    const val = parseInt(value);
+    switch (val) {
+      case 0: return "Tidak diketahui";
+      case 1: return "Islam";
+      case 2: return "Kristen (Protestan)";
+      case 3: return "Katolik";
+      case 4: return "Hindu";
+      case 5: return "Budha";
+      case 6: return "Konghucu";
+      case 7: return "Penghayat";
+      default: return `Tidak valid (${value})`;
     }
   };
 
   const getPendidikan = (value) => {
-    switch (value) {
-      case 0:
-        return "Tidak sekolah";
-      case 1:
-        return "SD";
-      case 2:
-        return "SLTP sederajat";
-      case 3:
-        return "SLTA sederajat";
-      case 4:
-        return "D1-D3 sederajat";
-      case 5:
-        return "D4";
-      case 6:
-        return "S1";
-      case 7:
-        return "S2";
-      case 8:
-        return "S3";
-      default:
-        return "Tidak valid";
+    const val = parseInt(value);
+    switch (val) {
+      case 0: return "Tidak sekolah";
+      case 1: return "SD";
+      case 2: return "SLTP sederajat";
+      case 3: return "SLTA sederajat";
+      case 4: return "D1-D3 sederajat";
+      case 5: return "D4";
+      case 6: return "S1";
+      case 7: return "S2";
+      case 8: return "S3";
+      default: return "Tidak valid";
     }
   };
 
   const getPerkerjaan = (value) => {
-    switch (value) {
-      case 0:
-        return "Tidak bekerja";
-      case 1:
-        return "PNS";
-      case 2:
-        return "TNI/POLRI";
-      case 3:
-        return "BUMN";
-      case 4:
-        return "Pegawai/Wirausaha";
-      default:
-        return "Tidak valid";
+    const val = parseInt(value);
+    switch (val) {
+      case 0: return "Tidak bekerja";
+      case 1: return "PNS";
+      case 2: return "TNI/POLRI";
+      case 3: return "BUMN";
+      case 4: return "Pegawai/Wirausaha";
+      default: return "Tidak valid";
     }
   };
 
   const getPernikahan = (value) => {
-    switch (value) {
-      case 1:
-        return "Belum Kawin";
-      case 2:
-        return "Kawin";
-      case 3:
-        return "Cerai Hidup";
-      case 4:
-        return "Cerai Mati";
-      default:
-        return "Tidak valid";
+    const val = parseInt(value);
+    switch (val) {
+      case 1: return "Belum Kawin";
+      case 2: return "Kawin";
+      case 3: return "Cerai Hidup";
+      case 4: return "Cerai Mati";
+      default: return "Tidak valid";
     }
   };
 
   useEffect(() => {
     if (selectedPatient) {
       setFormData({
-        namaLengkap: selectedPatient.NamaLengkap || "",
-        nomorRekamMedis: selectedPatient.NomorRekamMedis || "",
-        nik: selectedPatient.NIK || "",
-        nomorIdentitasLain: selectedPatient.NomorIdentitasLain || "",
-        namaIbuKandung: selectedPatient.NamaIbuKandung || "",
-        tempatLahir: selectedPatient.TempatLahir || "",
-        tanggalLahir: selectedPatient.TanggalLahir || "",
-        jenisKelamin: getJenisKelaminText(selectedPatient.JenisKelamin),
-        agama: getAgama(selectedPatient.Agama),
-        suku: selectedPatient.Suku || "",
-        bahasaDikuasai: selectedPatient.BahasaDikuasai || "",
-        alamatLengkap: selectedPatient.AlamatLengkap || "",
-        rt: selectedPatient.RT || "",
-        rw: selectedPatient.RW || "",
-        kelurahan: selectedPatient.Kelurahan || "",
-        kecamatan: selectedPatient.Kecamatan || "",
-        kabupaten: selectedPatient.KotamadyaKabupaten || "",
-        kodePos: selectedPatient.KodePos || "",
-        provinsi: selectedPatient.Provinsi || "",
-        negara: selectedPatient.Negara || "",
-        nomorTeleponRumah: selectedPatient.NomorTeleponRumah || "",
-        nomorTeleponSelular: selectedPatient.NomorTeleponSelular || "",
-        pendidikan: getPendidikan(selectedPatient.Pendidikan),
-        pekerjaan: getPerkerjaan(selectedPatient.Perkerjaan),
-        statusPernikahan: getPernikahan(selectedPatient.StatusPernikahan),
-        alamatDomisili: selectedPatient.AlamatLengkapDomisili || "",
-        rtDomisili: selectedPatient.RTDomisili || "",
-        rwDomisili: selectedPatient.RWDomisili || "",
-        kelurahanDomisili: selectedPatient.KelurahanDomisili || "",
-        kecamatanDomisili: selectedPatient.KecamatanDomisili || "",
-        kabupatenDomisili: selectedPatient.KotamadyaKabupatenDomisili || "",
-        kodePosDomisili: selectedPatient.KodeposDomisili || "",
-        provinsiDomisili: selectedPatient.ProvinsiDomisili || "",
-        negaraDomisili: selectedPatient.NegaraDomisili || "",
+        namaLengkap: selectedPatient.namaLengkap || "",
+        nomorRekamMedis: selectedPatient.nomorRekamMedis || "",
+        nik: selectedPatient.nik || "",
+        nomorIdentitasLain: selectedPatient.nomorIdentitasLain || "",
+        namaIbuKandung: selectedPatient.namaIbuKandung || "",
+        tempatLahir: selectedPatient.tempatLahir || "",
+        tanggalLahir: selectedPatient.tanggalLahir || "",
+        jenisKelamin: getJenisKelaminText(selectedPatient.jenisKelamin),
+        agama: getAgama(selectedPatient.agama),
+        suku: selectedPatient.suku || "",
+        bahasaDikuasai: selectedPatient.bahasaDikuasai || "",
+        alamatLengkap: selectedPatient.alamatLengkap || "",
+        rt: selectedPatient.rt || "",
+        rw: selectedPatient.rw || "",
+        kelurahan: selectedPatient.kelurahan || "",
+        kecamatan: selectedPatient.kecamatan || "",
+        kabupaten: selectedPatient.kabupaten || "",
+        kodePos: selectedPatient.kodePos || "",
+        provinsi: selectedPatient.provinsi || "",
+        negara: selectedPatient.negara || "",
+        nomorTeleponRumah: selectedPatient.noTelpRumah || "",
+        nomorTeleponSelular: selectedPatient.noTelpPasien || "",
+        pendidikan: getPendidikan(selectedPatient.pendidikan),
+        pekerjaan: getPerkerjaan(selectedPatient.pekerjaan),
+        statusPernikahan: getPernikahan(selectedPatient.statusPernikahan),
+        alamatDomisili: selectedPatient.alamatDomisili || "",
+        rtDomisili: selectedPatient.rtDomisili || "",
+        rwDomisili: selectedPatient.rwDomisili || "",
+        kelurahanDomisili: selectedPatient.kelurahanDomisili || "",
+        kecamatanDomisili: selectedPatient.kecamatanDomisili || "",
+        kabupatenDomisili: selectedPatient.kabupatenDomisili || "",
+        kodePosDomisili: selectedPatient.kodePosDomisili || "",
+        provinsiDomisili: selectedPatient.provinsiDomisili || "",
+        negaraDomisili: selectedPatient.negaraDomisili || "",
+      });
+    } else {
+      setFormData({
+        namaLengkap: "",
+        nomorRekamMedis: "",
+        nik: "",
+        nomorIdentitasLain: "",
+        namaIbuKandung: "",
+        tempatLahir: "",
+        tanggalLahir: "",
+        jenisKelamin: "",
+        agama: "",
+        suku: "",
+        bahasaDikuasai: "",
+        alamatLengkap: "",
+        rt: "",
+        rw: "",
+        kelurahan: "",
+        kecamatan: "",
+        kabupaten: "",
+        kodePos: "",
+        provinsi: "",
+        negara: "",
+        nomorTeleponRumah: "",
+        nomorTeleponSelular: "",
+        pendidikan: "",
+        pekerjaan: "",
+        statusPernikahan: "",
+        alamatDomisili: "",
+        rtDomisili: "",
+        rwDomisili: "",
+        kelurahanDomisili: "",
+        kecamatanDomisili: "",
+        kabupatenDomisili: "",
+        kodePosDomisili: "",
+        provinsiDomisili: "",
+        negaraDomisili: "",
       });
     }
   }, [selectedPatient]);
@@ -229,24 +211,46 @@ const DetailDataPasien = ({ selectedPatient }) => {
     navigate("/DetailPasien/TambahPasien");
   };
 
-  
+  if (searchStatus.loading) {
+    return null;
+  }
+
+  if (!selectedPatient) {
+    return (
+      <Container className="mt-4">
+        <Card className="text-center p-4">
+          <h4>Silakan cari pasien menggunakan NIK atau Nomor Rekam Medis</h4>
+          <p className="text-muted">
+            Data pasien akan ditampilkan di sini setelah ditemukan
+          </p>
+          <Button
+            variant="primary"
+            className="fw-bold"
+            onClick={handleTambahPasien}
+          >
+            Tambah Pasien
+          </Button>
+        </Card>
+      </Container>
+    );
+  }
 
   return (
     <Container className="mt-4 my-4">
       <Card className="shadow p-3">
-        {/* Header */}
         <div className="bg-primary text-white p-3 rounded d-flex justify-content-between align-items-center">
           <h4 className="mb-0 text-start">Detail Pasien</h4>
           <Button
             variant="light"
             className="text-primary fw-bold"
-            onClick={handleTambahPasien} // Tambahkan onClick handler
+            onClick={handleTambahPasien}
           >
-            +
+            Tambah Pasien +
           </Button>
         </div>
-        {/* Form */}
+
         <Form className="mt-3">
+          {/* Form fields implementation */}
           <Row className="mb-3">
             {/* Nama Lengkap */}
             <Col md={6}>
@@ -680,21 +684,17 @@ const DetailDataPasien = ({ selectedPatient }) => {
             </Col>
           </Row>
 
-          {/* Tombol Batal & Simpan */}
           <div className="d-flex justify-content-end gap-2 mt-3">
-            <Button variant="success" onClick={() => setShowModal(true)}>
+            <Button
+              variant="success"
+              onClick={onShowModal}
+              disabled={loadingDokter || errorDokter}
+            >
               <FaSave /> Daftar Rawat Jalan
             </Button>
-          </div> 
+          </div>
         </Form>
       </Card>
-      <ModalRawatJalan
-        show={showModal}
-        handleClose={() => setShowModal(false)}
-        selectedPatient={selectedPatient}
-        dokter={dokter}
-        onSave={handleSaveRegistration}
-      />
     </Container>
   );
 };

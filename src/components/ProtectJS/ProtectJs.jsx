@@ -1,15 +1,23 @@
-import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 const ProtectedRoute = () => {
-  const isLoggedIn = sessionStorage.getItem("isLoggedIn");
+  const location = useLocation();
+  const isAuthenticated = !!sessionStorage.getItem("walletAddress") && 
+                         !!sessionStorage.getItem("isLoggedIn");
 
-  // Jika pengguna belum login, redirect ke halaman login
-  if (isLoggedIn !== "true") {
+  console.log('ProtectedRoute check:', {
+    isAuthenticated,
+    walletAddress: sessionStorage.getItem("walletAddress"),
+    isLoggedIn: sessionStorage.getItem("isLoggedIn"),
+    currentPath: location.pathname
+  });
+
+  if (!isAuthenticated) {
+    console.log('Storing redirect path:', location.pathname);
+    sessionStorage.setItem('redirectPath', location.pathname);
     return <Navigate to="/login" replace />;
   }
 
-  // Jika pengguna sudah login, tampilkan rute yang diminta
   return <Outlet />;
 };
 
