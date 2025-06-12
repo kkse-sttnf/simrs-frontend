@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 
-const contractAddress = '0x347637C9B8b40661cc56Ef2615a569B19F23C6D0';
+const contractAddress = process.env.REACT_APP_DOCTOR_CONTRACT_ADDRESS;
 const contractAbi = [
   'event DoctorDeleted(uint256)',
   'event DoctorRegistered(uint256,string,string,string)',

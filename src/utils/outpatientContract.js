@@ -1,6 +1,6 @@
   import { ethers } from 'ethers';
 
-  const CONTRACT_ADDRESS = '0xD621CDd49B5E21b235e0E87bef92703adf901b4c';
+  const CONTRACT_ADDRESS = process.env.REACT_APP_OUTPATIENT_CONTRACT_ADDRESS;
   const CONTRACT_ABI = [
     'event PatientDequeued(string mrHash)',
     'event PatientEnqueued(string mrHash, uint256 scheduleId, uint256 queueNumber)',
