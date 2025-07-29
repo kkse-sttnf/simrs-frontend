@@ -80,7 +80,7 @@ const LoginForm = () => {
       {/* Left Side - Image & Text */}
       <div className="col-md-6 bg-primary text-white d-flex flex-column align-items-center justify-content-center text-center p-5">
         <h1 className="fw-bold mb-4">
-          EmulChain: Sistem Penyimpanan Data Pasien Berbasis Blockchain
+          EmulChain: Repositori Rekam Medis Pasien Berbasis Blockchain
         </h1>
         <img
           src={SecureImage}
