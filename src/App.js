@@ -14,19 +14,19 @@ const PageTitleUpdater = () => {
 
   useEffect(() => {
     const titles = {
-      "/login": "Login - SIM RS",
-      "/DataDokter": "Data Dokter - SIM RS",
-      "/DetailPasien": "Detail Pasien - SIM RS",
-      "/TambahPasien": "Tambah Pasien - SIM RS",
-      "/RawatJalan": "Rawat Jalan - SIM RS",
-      "/DataDokter/TambahDokter": "Tambah Dokter - SIM RS",
-      "/DataDokter/DetailDokter/:id": "Detail Dokter - SIM RS"
+      "/login": "Login - EmulChain",
+      "/DataDokter": "Data Dokter - EmulChain",
+      "/DetailPasien": "Detail Pasien - EmulChain",
+      "/TambahPasien": "Tambah Pasien - EmulChain",
+      "/RawatJalan": "Rawat Jalan - EmulChain",
+      "/DataDokter/TambahDokter": "Tambah Dokter - EmulChain",
+      "/DataDokter/DetailDokter/:id": "Detail Dokter - EmulChain"
     };
 
     if (location.pathname.startsWith("/DataDokter/DetailDokter/")) {
-      document.title = "Detail Dokter - SIM RS";
+      document.title = "Detail Dokter - EmulChain";
     } else {
-      document.title = titles[location.pathname] || "SIM RS";
+      document.title = titles[location.pathname] || "EmulChain";
     }
   }, [location]);
 
