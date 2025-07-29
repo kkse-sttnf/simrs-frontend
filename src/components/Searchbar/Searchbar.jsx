@@ -44,6 +44,7 @@ const SearchBar = ({ onSelectPatient, onSearchStatus }) => {
   };
 
   const connectWallet = async () => {
+    
     try {
       await getContract();
       setIsWalletConnected(true);

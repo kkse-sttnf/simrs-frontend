@@ -134,7 +134,7 @@ const LoginForm = () => {
           <small>
             Belum punya MetaMask?{" "}
             <a
-              href="https://metamask.io/download.html"
+              href="https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn"
               target="_blank"
               rel="noopener noreferrer"
               className="text-decoration-none"
